@@ -26,7 +26,7 @@ fn main() {
     let filename_number_map = parse::get_numbers(&filename_number_indices_map);
 
     let max = filename_number_map.values().max().unwrap(); // finding the max number
-    let max_digits: u32 = max / 10 + 1;
+    let max_digits: usize = max / 10 + 1;
 
     // Map with all information that we need for the transformation
     let final_transform_map = nflz::merge_maps(
@@ -39,6 +39,8 @@ fn main() {
     println!("{:#?}", final_transform_map);
 
 
-    //let renames: HashMap<&String, String> =
+    let rename_map = nflz::get_new_filename_map(&final_transform_map, max_digits);
+
+    println!("{:#?}", rename_map);
 }
 
