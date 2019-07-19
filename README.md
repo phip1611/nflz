@@ -17,8 +17,7 @@ paris (n).png   =>  n digits => indicator for how many zeros to add
 ```
 
 ## How it works
-It doesn't need any parameters, it works in the pwd/cwd. It looks if all files has the same file extension
-and all file's have the pattern `\([0-9]+\)` in them. Otherwise it will exit with a notice.
+It doesn't need any parameters, it works in the pwd/cwd. It takes all files with the pattern `\([0-9]+\)`.
 
 just compile it, add it to your PATH and then:
 ```
