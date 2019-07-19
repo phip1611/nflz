@@ -1,12 +1,11 @@
-# nlfz - Numbered Filenames With Leading Zeros - CLI
-**nlfz** is a CLI-Tool that helps you to add leading zeros to numbered filenames.
+# nflz - Numbered Filenames With Leading Zeros - CLI + Library
+**nflz** is a CLI-Tool + library that helps you to add leading zeros to numbered filenames in ascending order.
 
+Build: &nbsp; [![Build Status](https://travis-ci.com/phip1611/nflz.svg?branch=main)](https://travis-ci.com/phip1611/nflz)
 
-
-**Some Directory:**
+## What it does
+**Content of some directory:**
 ```
-
-
 paris (1).png   =>  paris (01).png
 paris (2).png   =>  paris (02).png
 ...
@@ -15,9 +14,25 @@ paris (12).png  =>  paris (12).png
 paris (n).png   =>  n digits => indicator for how many zeros to add 
 ```
 
+## Install / use
+### Rust library
+Cargo.toml:
+```
+nflz = "<latest-version>"
+```
+### CLI tool
+`$ cargo install nflz`
+
 ## How it works
-It doesn't need any parameters, it works in the pwd/cwd. It looks if all files has the same file extension
-and all file's have the pattern `\([0-9]+\)` in them. Otherwise it will exit with a notice.
+It either works in pwd (present working dir) or in the directory passed as the first argument.
+
+```
+$ nflz
+$ nflz <absolute or relative path to dir>
+```
+
+**`nflz` asks you for confirmation before it does any changes to your file system!**
+
 
 ## Background
 If you select multiple files in Windows Explorer and rename them to the same name, Windows automatically
