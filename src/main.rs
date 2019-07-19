@@ -42,5 +42,7 @@ fn main() {
     let rename_map = nflz::get_new_filename_map(&final_transform_map, max_digits);
 
     println!("{:#?}", rename_map);
+
+    nflz::rename_all_files(rename_map);
 }
 

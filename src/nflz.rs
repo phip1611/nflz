@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::fs;
 
 #[derive(Debug)]
 pub struct NumberIndices {
@@ -71,4 +72,10 @@ fn map_filename(name: &String, info: &TransformationInformation, digits: usize) 
 
     let new_filename = new_filename;
     new_filename
+}
+
+pub fn rename_all_files(map: HashMap<&String, String>) {
+    for (k, v) in map.iter() {
+        fs::rename(k, v).expect(&format!("Could not rename file {} to {}", k, v)); // Rename a.txt to b.txt
+    }
 }
