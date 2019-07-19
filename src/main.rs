@@ -17,6 +17,11 @@ fn main() {
         .display().to_string();
     let filenames = fs_util::get_files(pwd);
 
+    if filenames.len() == 0 {
+        eprintln!("No matching files found in this directory.");
+        return;
+    }
+
     //eprintln!("{:#?}", filenames);
 
     // filename Map
