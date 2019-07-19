@@ -20,6 +20,11 @@ paris (n).png   =>  n digits => indicator for how many zeros to add
 It doesn't need any parameters, it works in the pwd/cwd. It looks if all files has the same file extension
 and all file's have the pattern `\([0-9]+\)` in them. Otherwise it will exit with a notice.
 
+just compile it, add it to your PATH and then:
+```
+$ cd some/dir
+$ nflz
+```
 ## Background
 If you select multiple files in Windows Explorer and rename them to the same name, Windows automatically
 numbers all files for you. The downside is that there are no leading zeros. Other programs than Windows,
