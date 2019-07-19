@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 use std::fs;
+use crate::math_util;
 
 #[derive(Debug)]
 pub struct NumberIndices {
@@ -62,8 +63,8 @@ pub fn get_new_filename_map<'a>(rename_map: &HashMap<&'a String, TransformationI
 
 fn map_filename(name: &String, info: &TransformationInformation, digits: usize) -> String {
     let mut new_filename = String::from(&name[0 .. info.indices.start + 1]); // + 1 to include '('
-    let digits_current = info.number / 10 + 1;
-    for i in 0.. (digits - digits_current) {
+    let digits_current = math_util::digits(info.number);
+    for _i in 0 .. (digits - digits_current) {
         new_filename.push('0');
     }
     new_filename.push_str(&info.number.to_string());

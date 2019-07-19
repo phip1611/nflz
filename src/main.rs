@@ -3,13 +3,13 @@ extern crate lazy_static;
 extern crate regex;
 
 use std::env;
-use std::collections::HashMap;
 
 mod validation;
 mod parse;
 mod fs_util;
 mod globals;
 mod nflz;
+mod math_util;
 
 fn main() {
     let pwd= env::current_dir()
@@ -26,7 +26,7 @@ fn main() {
     let filename_number_map = parse::get_numbers(&filename_number_indices_map);
 
     let max = filename_number_map.values().max().unwrap(); // finding the max number
-    let max_digits: usize = max / 10 + 1;
+    let max_digits: usize = math_util::digits(*max);
 
     // Map with all information that we need for the transformation
     let final_transform_map = nflz::merge_maps(

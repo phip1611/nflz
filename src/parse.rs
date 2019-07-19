@@ -2,7 +2,6 @@ use crate::globals::REGEX;
 use std::collections::HashMap;
 use regex::Regex;
 use crate::nflz::NumberIndices;
-use std::borrow::Borrow;
 
 pub fn get_number_indices(filenames: &Vec<String>) -> HashMap<&String, NumberIndices> {
     let mut map = HashMap::new();
