@@ -15,11 +15,17 @@ fn main() {
         .display().to_string();
     let filenames = fs_util::get_files(pwd);
 
-    eprintln!("{:#?}", filenames);
+    //eprintln!("{:#?}", filenames);
 
     // filename Map
     let number_indices = parse::get_number_indices(&filenames);
-    eprintln!("{:#?}", number_indices);
+    //eprintln!("{:#?}", number_indices);
+
+    let numbers: Vec<u32> = parse::get_numbers(&number_indices);
+    let max = numbers.iter().max().unwrap(); // finding the max number
+    let digits: u32 = max / 10 + 1;
+
+    //eprintln!("{:#?} - max: {} with {} digits", numbers, max, digits);
     /*
     let max_digits = get_max_digits(&filenames);
 
