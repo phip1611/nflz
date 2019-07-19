@@ -1,6 +1,7 @@
 # nlfz - Numbered Filenames With Leading Zeros - CLI
 **nlfz** is a CLI-Tool that helps you to add leading zeros to numbered filenames.
 
+Build: &nbsp; [![Build Status](https://travis-ci.com/phip1611/malloc-log-lib.svg?branch=master)](https://travis-ci.com/phip1611/malloc-log-lib)
 
 
 **Some Directory:**
