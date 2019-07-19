@@ -3,11 +3,13 @@ extern crate lazy_static;
 extern crate regex;
 
 use std::env;
+use std::collections::HashMap;
 
 mod validation;
 mod parse;
 mod fs_util;
 mod globals;
+mod nflz;
 
 fn main() {
     let pwd= env::current_dir()
@@ -18,17 +20,25 @@ fn main() {
     //eprintln!("{:#?}", filenames);
 
     // filename Map
-    let number_indices = parse::get_number_indices(&filenames);
-    //eprintln!("{:#?}", number_indices);
+    let filename_number_indices_map = parse::get_number_indices(&filenames);
+    //eprintln!("{:#?}", filename_number_indices_map);
 
-    let numbers: Vec<u32> = parse::get_numbers(&number_indices);
-    let max = numbers.iter().max().unwrap(); // finding the max number
-    let digits: u32 = max / 10 + 1;
+    let filename_number_map = parse::get_numbers(&filename_number_indices_map);
 
-    //eprintln!("{:#?} - max: {} with {} digits", numbers, max, digits);
-    /*
-    let max_digits = get_max_digits(&filenames);
+    let max = filename_number_map.values().max().unwrap(); // finding the max number
+    let max_digits: u32 = max / 10 + 1;
 
-    let fn_map: HashMap<&str, String> = HashMap::new();*/
+    // Map with all information that we need for the transformation
+    let final_transform_map = nflz::merge_maps(
+        filename_number_map,
+        filename_number_indices_map
+    );
+
+    // TODO: instead of making two maps and merging them make the one map at once
+
+    println!("{:#?}", final_transform_map);
+
+
+    //let renames: HashMap<&String, String> =
 }
 
