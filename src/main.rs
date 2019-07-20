@@ -23,7 +23,7 @@ fn main() {
     }
 
     if filenames.len() == 1 {
-        eprintln!("There is only one file found. No action to do.");
+        eprintln!("There is only one file found. No action needed.");
         return;
     }
 

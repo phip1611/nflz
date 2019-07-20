@@ -44,6 +44,9 @@ impl TransformationInformation {
 pub fn get_new_filename_map<'a>(rename_map: &HashMap<&'a String, TransformationInformation>, max_digits: usize) -> HashMap<&'a String, String> {
     let mut map = HashMap::new();
     let mut skipped_any = false;
+
+    println!("nflz will skip the following files:");
+
     for (k, v) in rename_map.iter() {
         let new_filename = map_filename(k, v, max_digits);
 
@@ -54,14 +57,16 @@ pub fn get_new_filename_map<'a>(rename_map: &HashMap<&'a String, TransformationI
         // Strings equals? (e.g. is nflz is running again in the same directory)
         if **k == new_filename {
             skipped_any = true;
-            eprintln!("No action needed for file '{}'; will skip", k);
+            println!("  {}", k);
         } else {
             map.insert(*k, new_filename);
         }
     }
 
     if skipped_any {
-        println!(); // newline; then "nlfz will rename the ..." is in next line
+        println!(); // newline; then "nflz will rename the ..." is in next line
+    } else {
+        println!("  -\n"); // newline; then "nflz will rename the ..." is in next line
     }
 
     let map = map;
@@ -98,7 +103,7 @@ pub fn show_user_intended_actions(map: &HashMap<&String, String>) {
         println!("No files to rename left; will exit");
         return;
     } else {
-        println!("nlfz will rename the following files:\n");
+        println!("nflz will rename the following files:");
     }
 
     let mut longest_name = 0;
@@ -123,6 +128,6 @@ pub fn show_user_intended_actions(map: &HashMap<&String, String>) {
         for _i in 0 .. longest_name - k.len() {
             x.push(' ');
         }
-        println!("{} => {}", x, v);
+        println!("  {} => {}", x, v);
     }
 }
