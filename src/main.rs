@@ -32,8 +32,16 @@ fn main() {
 
     let rename_map = nflz::get_new_filename_map(&map, max_digits);
 
-    nflz::show_user_intended_actions(&rename_map);
+    nflz::print_intended_actions(&rename_map);
 
-    nflz::rename_all_files(rename_map);
+    let confirmed = nflz::ask_for_confirmation();
+
+    if confirmed {
+        nflz::rename_all_files(rename_map);
+        println!("\nDone.");
+    } else {
+        println!("Aborted.");
+    }
+
 }
 

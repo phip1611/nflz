@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 use std::fs;
 use crate::math_util;
+use std::io::stdin;
 
 /// Struct that describes the indices in the filename where the (...)-group is find
 #[derive(Debug)]
@@ -96,7 +97,7 @@ pub fn rename_all_files(map: HashMap<&String, String>) {
 }
 
 /// Shows the user all files that are going to be renamed
-pub fn show_user_intended_actions(map: &HashMap<&String, String>) {
+pub fn print_intended_actions(map: &HashMap<&String, String>) {
     if map.len() == 0 {
         // this will happen if there are files in the directory but they are already
         // ALL renamed
@@ -129,5 +130,17 @@ pub fn show_user_intended_actions(map: &HashMap<&String, String>) {
             x.push(' ');
         }
         println!("  {} => {}", x, v);
+    }
+}
+
+pub fn ask_for_confirmation() -> bool {
+    println!("\nPlease confirm with 'y' or abort with 'n'");
+    let mut input= String::new();
+    match stdin().read_line(&mut input) {
+        Ok(_s) => {
+            // Strings equal?
+            input == String::from("y\n")
+        }
+        Err(_) => false
     }
 }
