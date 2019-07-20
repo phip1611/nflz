@@ -21,7 +21,7 @@ pub fn get_transformation_info(filenames: &Vec<String>) -> (HashMap<&String, Tra
     }
     let map = map;
 
-    let digits = math_util::digits(max);
+    let digits = math_util::digits(&max);
 
     (map, digits)
 }
