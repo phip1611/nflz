@@ -37,9 +37,9 @@ nflz will skip the following files:
   paris (453).png
 
 nflz will rename the following files:
-  paris (23).png => paris (023).png
-  paris (2).png  => paris (002).png
   paris (1).png  => paris (001).png
+  paris (2).png  => paris (002).png
   paris (3).png  => paris (003).png
   paris (12).png => paris (012).png
+  paris (23).png => paris (023).png
 ```
