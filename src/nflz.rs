@@ -140,7 +140,7 @@ pub fn ask_for_confirmation() -> bool {
     match stdin().read_line(&mut input) {
         Ok(_s) => {
             // Strings equal?
-            input == String::from("y\n")
+            input.trim() == String::from("y") // trim to remove \r\n | \n
         }
         Err(_) => false
     }
