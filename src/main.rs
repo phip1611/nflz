@@ -34,6 +34,10 @@ fn main() {
 
     nflz::print_intended_actions(&rename_map);
 
+    if rename_map.len() == 0 {
+        return;
+    }
+
     let confirmed = nflz::ask_for_confirmation();
 
     if confirmed {
