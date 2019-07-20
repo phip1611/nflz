@@ -30,11 +30,9 @@ fn main() {
     // map with all infos we need for the renaming
     let (map, max_digits) = parse::get_transformation_info(&filenames);
 
-    //println!("{:#?}", map);
-
     let rename_map = nflz::get_new_filename_map(&map, max_digits);
 
-    //println!("{:#?}", rename_map);
+    nflz::show_user_intended_actions(&rename_map);
 
     nflz::rename_all_files(rename_map);
 }

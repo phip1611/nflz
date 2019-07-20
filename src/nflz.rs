@@ -70,3 +70,32 @@ pub fn rename_all_files(map: HashMap<&String, String>) {
         fs::rename(k, v).expect(&format!("Could not rename file {} to {}", k, v)); // Rename a.txt to b.txt
     }
 }
+
+/// Shows the user all files that are going to be renamed
+pub fn show_user_intended_actions(map: &HashMap<&String, String>) {
+    println!("nlfz will rename the following files:\n");
+    let mut longest_name = 0;
+
+    // we need the longest name so that we can add spaces
+    // to the key beeing printed; so we get something like this
+    // stdout:
+    //  paris (2).txt   => paris (002).txt
+    //  paris (001).txt => paris (001).txt
+    // rather than
+    //  paris (2).txt => paris (002).txt
+    //  paris (001).txt => paris (001).txt
+
+    for (k, _v) in map.iter() {
+        if k.len() > longest_name {
+            longest_name = k.len();
+        }
+    }
+
+    for (k, v) in map.iter() {
+        let mut x = String::from(*k);
+        for _i in 0 .. longest_name - k.len() {
+            x.push(' ');
+        }
+        println!("{} => {}", x, v);
+    }
+}
