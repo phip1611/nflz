@@ -1,6 +1,8 @@
 use std::fs;
 use crate::validation;
 
+/// Returns all filenames as strings in the pwd/cwd that matches the pattern that is subject of
+/// this programm.
 pub fn get_files(pwd: String) -> Vec<String> {
     let mut filepaths = Vec::new();
     let paths = fs::read_dir(pwd).expect("Can't read directory!");

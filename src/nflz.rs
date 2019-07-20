@@ -2,56 +2,44 @@ use std::collections::HashMap;
 use std::fs;
 use crate::math_util;
 
+/// Struct that describes the indices in the filename where the (...)-group is find
 #[derive(Debug)]
-pub struct NumberIndices {
+struct TransformationIndicesInformation {
     pub start: usize,
     pub end: usize
 }
 
-impl NumberIndices {
-    pub fn from(start: usize, end: usize) -> NumberIndices {
-        NumberIndices {
+impl TransformationIndicesInformation {
+    /// Constructs a new TransformationIndicesInformation
+    fn from(start: usize, end: usize) -> TransformationIndicesInformation {
+        TransformationIndicesInformation {
             start,
             end
         }
     }
-
-    pub fn from_other(x: &NumberIndices) -> NumberIndices {
-        NumberIndices {
-            start: x.start,
-            end: x.end
-        }
-    }
 }
 
+/// truct that describes all information needed for the transformation/renaming.
 #[derive(Debug)]
 pub struct TransformationInformation {
     number: usize,
-    indices: NumberIndices
+    indices: TransformationIndicesInformation
 }
 
 impl TransformationInformation {
-    pub fn from(number: usize, indices: &NumberIndices) -> TransformationInformation {
+    /// COnstructs a new TransformationInformation
+    pub fn new(number: usize, index_start: usize, index_end: usize) -> TransformationInformation {
         TransformationInformation {
             number,
-            indices: NumberIndices::from_other(indices)
+            indices: TransformationIndicesInformation::from(
+                index_start,
+                index_end
+            )
         }
     }
 }
 
-pub fn merge_maps<'a>(filename_number_map: HashMap<&'a String, usize>,
-                  filename_number_indices_map: HashMap<&'a String, NumberIndices>)
-    -> HashMap<&'a String, TransformationInformation> {
-    let mut map = HashMap::new();
-
-    for (k, v) in filename_number_map.iter() {
-        map.insert(*k, TransformationInformation::from(*v, filename_number_indices_map.get(k).unwrap()));
-    }
-
-    let map = map;
-    map
-}
-
+/// Returns a map from the old filename to the new filenames
 pub fn get_new_filename_map<'a>(rename_map: &HashMap<&'a String, TransformationInformation>, digits: usize) -> HashMap<&'a String, String> {
     let mut map = HashMap::new();
     for (k, v) in rename_map.iter() {
@@ -61,6 +49,7 @@ pub fn get_new_filename_map<'a>(rename_map: &HashMap<&'a String, TransformationI
     map
 }
 
+/// Transform the filename-string into the string with leading zeros in the (...)-group
 fn map_filename(name: &String, info: &TransformationInformation, digits: usize) -> String {
     let mut new_filename = String::from(&name[0 .. info.indices.start + 1]); // + 1 to include '('
     let digits_current = math_util::digits(info.number);
@@ -75,6 +64,7 @@ fn map_filename(name: &String, info: &TransformationInformation, digits: usize) 
     new_filename
 }
 
+/// Renames all files in the filesystem
 pub fn rename_all_files(map: HashMap<&String, String>) {
     for (k, v) in map.iter() {
         fs::rename(k, v).expect(&format!("Could not rename file {} to {}", k, v)); // Rename a.txt to b.txt

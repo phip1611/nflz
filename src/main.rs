@@ -22,31 +22,19 @@ fn main() {
         return;
     }
 
-    //eprintln!("{:#?}", filenames);
+    if filenames.len() == 1 {
+        eprintln!("There is only one file found. No action to do.");
+        return;
+    }
 
-    // filename Map
-    let filename_number_indices_map = parse::get_number_indices(&filenames);
-    //eprintln!("{:#?}", filename_number_indices_map);
+    // map with all infos we need for the renaming
+    let (map, max_digits) = parse::get_transformation_info(&filenames);
 
-    let filename_number_map = parse::get_numbers(&filename_number_indices_map);
+    //println!("{:#?}", map);
 
-    let max = filename_number_map.values().max().unwrap(); // finding the max number
-    let max_digits: usize = math_util::digits(*max);
+    let rename_map = nflz::get_new_filename_map(&map, max_digits);
 
-    // Map with all information that we need for the transformation
-    let final_transform_map = nflz::merge_maps(
-        filename_number_map,
-        filename_number_indices_map
-    );
-
-    // TODO: instead of making two maps and merging them make the one map at once
-
-    println!("{:#?}", final_transform_map);
-
-
-    let rename_map = nflz::get_new_filename_map(&final_transform_map, max_digits);
-
-    println!("{:#?}", rename_map);
+    //println!("{:#?}", rename_map);
 
     nflz::rename_all_files(rename_map);
 }
