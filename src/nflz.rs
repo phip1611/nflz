@@ -107,7 +107,7 @@ pub fn print_intended_actions(map: &HashMap<&String, String>) {
         println!("nflz will rename the following files:");
     }
 
-    let mut longest_name = 0;
+    let mut longest_name_len = 0;
 
     // we need the longest name so that we can add spaces
     // to the key beeing printed; so we get something like this
@@ -119,20 +119,21 @@ pub fn print_intended_actions(map: &HashMap<&String, String>) {
     //  paris (1).txt => paris (1).txt
 
     for (k, _v) in map.iter() {
-        if k.len() > longest_name {
-            longest_name = k.len();
+        if k.len() > longest_name_len {
+            longest_name_len = k.len();
         }
     }
 
     for (k, v) in map.iter() {
         let mut x = String::from(*k);
-        for _i in 0 .. longest_name - k.len() {
+        for _i in 0 .. longest_name_len - k.len() {
             x.push(' ');
         }
         println!("  {} => {}", x, v);
     }
 }
 
+/// Asks the user to confirm the action.
 pub fn ask_for_confirmation() -> bool {
     println!("\nPlease confirm with 'y' or abort with 'n'");
     let mut input= String::new();
