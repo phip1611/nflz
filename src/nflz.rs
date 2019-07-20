@@ -1,9 +1,7 @@
-use std::collections::HashMap;
-use std::fs;
 use crate::math_util;
 use std::io::stdin;
 
-/// Struct that describes the indices in the filename where the (...)-group is find
+/// Struct that describes the indices in the filename where the (...)-group was found
 #[derive(Debug)]
 struct TransformationIndicesInformation {
     pub start: usize,
@@ -20,47 +18,67 @@ impl TransformationIndicesInformation {
     }
 }
 
-/// truct that describes all information needed for the transformation/renaming.
+/// Struct that describes all information needed for the transformation/renaming.
 #[derive(Debug)]
 pub struct TransformationInformation {
-    number: usize,
+    filename: String,
+    pub number: usize,
     indices: TransformationIndicesInformation
 }
 
 impl TransformationInformation {
-    /// COnstructs a new TransformationInformation
-    pub fn new(number: usize, index_start: usize, index_end: usize) -> TransformationInformation {
+    /// Constructs a new TransformationInformation
+    pub fn new(filename: &String, number: usize, indices: (usize, usize)) -> TransformationInformation {
         TransformationInformation {
+            filename: String::from(filename),
             number,
             indices: TransformationIndicesInformation::from(
-                index_start,
-                index_end
+                indices.0,
+                indices.1
             )
         }
     }
 }
 
-/// Returns a map from the old filename to the new filenames; it will skip files where no action
-/// is needed.
-pub fn get_new_filename_map<'a>(rename_map: &HashMap<&'a String, TransformationInformation>, max_digits: usize) -> HashMap<&'a String, String> {
-    let mut map = HashMap::new();
+/// A Key-Value-Pair from old filename to new filename. We need this instead of a map
+/// so that we can order it properly in a vector.
+#[derive(Debug)]
+pub struct RenameInformation {
+    pub old_filename: String,
+    pub new_filename: String
+}
+
+impl RenameInformation {
+    /// Constructs a new RenameInformation
+    pub fn new(old_filename: &String, new_filename: &String) -> RenameInformation {
+        RenameInformation {
+            old_filename: String::from(old_filename),
+            new_filename: String::from(new_filename),
+        }
+    }
+}
+
+/// Returns the ordered vector with key value-pairs for the renaming.
+pub fn get_new_filename_sorted_vector(rename_vec: &Vec<TransformationInformation>, max_digits: usize) -> Vec<RenameInformation> {
+    let mut vec = Vec::new();
     let mut skipped_any = false;
 
     println!("nflz will skip the following files:");
 
-    for (k, v) in rename_map.iter() {
-        let new_filename = map_filename(k, v, max_digits);
+    for ti in rename_vec.iter() {
+        let new_filename = map_filename(ti, max_digits);
 
         // btw: need to compare the strings because we can't compare the number with max digits
         // because we have the number in TransformationInformation not in the string format
         // ==> zeros are stripped
 
         // Strings equals? (e.g. is nflz is running again in the same directory)
-        if **k == new_filename {
+        if ti.filename == new_filename {
             skipped_any = true;
-            println!("  {}", k);
+            println!("  {}", ti.filename); // print the skipped file
         } else {
-            map.insert(*k, new_filename);
+            let ri = RenameInformation::new(&ti.filename, &new_filename);
+            vec.push(ri);
         }
     }
 
@@ -70,35 +88,28 @@ pub fn get_new_filename_map<'a>(rename_map: &HashMap<&'a String, TransformationI
         println!("  -\n"); // newline; then "nflz will rename the ..." is in next line
     }
 
-    let map = map;
-    map
+    let vec = vec;
+    vec
 }
 
 /// Transform the filename-string into the string with leading zeros in the (...)-group
-fn map_filename(name: &String, info: &TransformationInformation, digits: usize) -> String {
-    let mut new_filename = String::from(&name[0 .. info.indices.start + 1]); // + 1 to include '('
+fn map_filename(info: &TransformationInformation, digits: usize) -> String {
+    let mut new_filename = String::from(&info.filename[0 .. info.indices.start + 1]); // + 1 to include '('
     let digits_current = math_util::digits(&info.number);
     for _i in 0 .. (digits - digits_current) {
         new_filename.push('0');
     }
     new_filename.push_str(&info.number.to_string());
 
-    new_filename.push_str(&name[info.indices.end - 1 .. name.len()]); // - 1 to include ')'
+    new_filename.push_str(&info.filename[info.indices.end - 1 .. info.filename.len()]); // - 1 to include ')'
 
     let new_filename = new_filename;
     new_filename
 }
 
-/// Renames all files in the filesystem
-pub fn rename_all_files(map: HashMap<&String, String>) {
-    for (k, v) in map.iter() {
-        fs::rename(k, v).expect(&format!("Could not rename file {} to {}", k, v)); // Rename a.txt to b.txt
-    }
-}
-
 /// Shows the user all files that are going to be renamed
-pub fn print_intended_actions(map: &HashMap<&String, String>) {
-    if map.len() == 0 {
+pub fn print_intended_actions(vec: &Vec<RenameInformation>) {
+    if vec.len() == 0 {
         // this will happen if there are files in the directory but they are already
         // ALL renamed
         println!("No files to rename left; will exit");
@@ -118,18 +129,22 @@ pub fn print_intended_actions(map: &HashMap<&String, String>) {
     //  paris (2).txt => paris (2).txt
     //  paris (1).txt => paris (1).txt
 
-    for (k, _v) in map.iter() {
-        if k.len() > longest_name_len {
-            longest_name_len = k.len();
+    // Loop to find the longest (...)-group
+    for ri in vec.iter() {
+        let l = ri.old_filename.len();
+        if l > longest_name_len {
+            longest_name_len = l;
         }
     }
 
-    for (k, v) in map.iter() {
-        let mut x = String::from(*k);
-        for _i in 0 .. longest_name_len - k.len() {
+    // Printing all key-value-pairs from old filename to new filename
+    for ri in vec.iter() {
+        let mut x = String::from(&ri.old_filename);
+        let range = longest_name_len - ri.old_filename.len();
+        for _i in 0 .. range {
             x.push(' ');
         }
-        println!("  {} => {}", x, v);
+        println!("  {} => {}", x, ri.new_filename);
     }
 }
 

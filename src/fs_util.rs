@@ -1,5 +1,6 @@
 use std::fs;
 use crate::validation;
+use crate::nflz::RenameInformation;
 
 /// Returns all filenames as strings in the pwd/cwd that matches the pattern that is subject of
 /// this programm.
@@ -15,4 +16,11 @@ pub fn get_files(pwd: String) -> Vec<String> {
         }
     }
     filepaths
+}
+
+/// Renames all files in the filesystem
+pub fn rename_all_files(vec: &Vec<RenameInformation>) {
+    for e in vec.iter() {
+        fs::rename(&e.old_filename, &e.new_filename).expect(&format!("Could not rename file {} to {}", &e.old_filename, &e.new_filename)); // Rename a.txt to b.txt
+    }
 }

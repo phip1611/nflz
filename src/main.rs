@@ -28,20 +28,20 @@ fn main() {
     }
 
     // map with all infos we need for the renaming
-    let (map, max_digits) = parse::get_transformation_info(&filenames);
+    let (vec, max_digits) = parse::get_transformation_info(&filenames);
 
-    let rename_map = nflz::get_new_filename_map(&map, max_digits);
+    let rename_vec = nflz::get_new_filename_sorted_vector(&vec, max_digits);
 
-    nflz::print_intended_actions(&rename_map);
+    nflz::print_intended_actions(&rename_vec);
 
-    if rename_map.len() == 0 {
+    if rename_vec.len() == 0 {
         return;
     }
 
     let confirmed = nflz::ask_for_confirmation();
 
     if confirmed {
-        nflz::rename_all_files(rename_map);
+        fs_util::rename_all_files(&rename_vec);
         println!("\nDone.");
     } else {
         println!("Aborted.");

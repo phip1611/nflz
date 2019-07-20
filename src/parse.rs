@@ -1,14 +1,14 @@
 use crate::globals::REGEX;
 use crate::math_util;
-use std::collections::HashMap;
 use regex::Regex;
 use crate::nflz::TransformationInformation;
 
-/// Gives back the Map with all information for the transformation (renaming) as well as the digit-count
+/// Gives back the sorted Vector with all information for the transformation (renaming) as well as the digit-count
 /// of the biggest number
-pub fn get_transformation_info(filenames: &Vec<String>) -> (HashMap<&String, TransformationInformation>, usize) {
-    let mut map = HashMap::new();
+pub fn get_transformation_info(filenames: &Vec<String>) -> (Vec<TransformationInformation>, usize) {
+    let mut vec = Vec::new();
     let mut max = 0; // to find the maximum number
+
     for name in filenames {
         // indices where (...)-group begins and ends
         let indices = get_number_indices_single(name);
@@ -17,13 +17,17 @@ pub fn get_transformation_info(filenames: &Vec<String>) -> (HashMap<&String, Tra
         if number > max {
             max = number;
         }
-        map.insert(name, TransformationInformation::new(number, indices.0, indices.1));
+
+        let ti = TransformationInformation::new(name, number, indices);
+        vec.push(ti);
     }
-    let map = map;
+
+    // sort all filenames by their number in natural order // when we print the files they have a easy to read order (instead of random order)
+    vec.sort_by(|a, b| a.number.cmp(&b.number));
 
     let digits = math_util::digits(&max);
-
-    (map, digits)
+    let vec = vec;
+    (vec, digits)
 }
 
 /// Returns the indices of the (...)-group for a specific filename-string.
