@@ -18,12 +18,12 @@ fn main() {
     let filenames = fs_util::get_files(pwd);
 
     if filenames.len() == 0 {
-        eprintln!("No matching files found in this directory.");
+        println!("No matching files found in this directory.");
         return;
     }
 
     if filenames.len() == 1 {
-        eprintln!("There is only one file found. No action needed.");
+        println!("There is only one file found. No action needed.");
         return;
     }
 
