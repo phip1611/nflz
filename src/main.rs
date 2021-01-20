@@ -1,51 +1,33 @@
-#[macro_use]
-extern crate lazy_static;
-extern crate regex;
-
-use std::env;
-
-mod validation;
-mod parse;
-mod fs_util;
-mod globals;
-mod nflz;
-mod math_util;
+use std::io::stdin;
+use nflz::{get_renamable_files, can_rename_all, NFLZError};
+use std::process::exit;
 
 fn main() {
-    let pwd= env::current_dir()
-        .expect("Can't get current working directory!")
-        .display().to_string();
-    let filenames = fs_util::get_files(pwd);
-
-    if filenames.len() == 0 {
-        println!("No matching files found in this directory.");
-        return;
-    }
-
-    if filenames.len() == 1 {
-        println!("There is only one file found. No action needed.");
-        return;
-    }
-
-    // map with all infos we need for the renaming
-    let (vec, max_digits) = parse::get_transformation_info(&filenames);
-
-    let rename_vec = nflz::get_new_filename_sorted_vector(&vec, max_digits);
-
-    nflz::print_intended_actions(&rename_vec);
-
-    if rename_vec.len() == 0 {
-        return;
-    }
-
-    let confirmed = nflz::ask_for_confirmation();
-
-    if confirmed {
-        fs_util::rename_all_files(&rename_vec);
-        println!("\nDone.");
+    let pwd = std::env::current_dir().unwrap();
+    let rn_map = get_renamable_files(&pwd).unwrap();
+    if let Err(e) = can_rename_all(&pwd, &rn_map) {
+        eprintln!("Can't rename the following files");
+        match e {
+            NFLZError::ConflictingFiles(files) => {
+                println!("{:#?}", &files)
+            }
+            _ => {}
+        }
+        exit(-1)
     } else {
-        println!("Aborted.");
-    }
 
+    }
 }
 
+/// Asks the user to confirm the action.
+fn ask_for_confirmation() -> bool {
+    println!("\nPlease confirm with 'y' or abort with 'n'");
+    let mut input= String::new();
+    match stdin().read_line(&mut input) {
+        Ok(_s) => {
+            // Strings equal?
+            input.trim() == String::from("y") // trim to remove \r\n | \n
+        }
+        Err(_) => false
+    }
+}
