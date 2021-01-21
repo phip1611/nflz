@@ -36,11 +36,11 @@ pub use error::NFLZError;
 /// See [`fsutil::get_matching_files`].
 pub use fsutil::get_matching_files;
 /// See [`nflz::can_rename_all`].
-pub use nflz::can_rename_all;
+pub use crate::nflz::can_rename_all;
 /// See [`nflz::compute_rename_map`].
-pub use nflz::compute_rename_map;
+pub use crate::nflz::compute_rename_map;
 /// See [`nflz::rename_all`].
-pub use nflz::rename_all;
+pub use crate::nflz::rename_all;
 
 mod error;
 mod fsutil;
