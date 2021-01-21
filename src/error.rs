@@ -3,6 +3,7 @@
 use std::error::Error;
 use std::fmt;
 use std::fmt::{Display, Formatter};
+use std::collections::HashSet;
 
 #[derive(Debug)]
 pub enum NFLZError {
@@ -10,7 +11,9 @@ pub enum NFLZError {
     ValueInNumberedGroupInvalid(String),
     CantReadDirectory(String, std::io::Error),
     ConflictingFiles(Vec<String>),
-    RenameFailed(String, String, std::io::Error)
+    RenameFailed(String, String, std::io::Error),
+    AmbiguousSuffixes(HashSet<String>),
+    AmbiguousPrefixes(HashSet<String>),
 }
 
 impl NFLZError {
@@ -51,6 +54,14 @@ impl Display for NFLZError {
                 old_filename,
                 new_filename,
                 os_err,
+            )),
+            NFLZError::AmbiguousSuffixes(suffixes) => f.write_str(&format!(
+                "There are multiple (and therefore ambiguous) suffixes in this directory: {:?}",
+                suffixes,
+            )),
+            NFLZError::AmbiguousPrefixes(prefixes) => f.write_str(&format!(
+                "There are multiple (and therefore ambiguous) prefixes in this directory: {:?}",
+                prefixes,
             )),
         }
     }

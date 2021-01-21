@@ -3,10 +3,10 @@
 use crate::error::NFLZError;
 use crate::fsutil::check_for_existing_files;
 use crate::parse::ParsedFilename;
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, HashSet};
 use std::path::Path;
 
-pub type RenameMap = BTreeMap<String, String>;
+pub type RenameMap = BTreeMap<Parse, String>;
 
 /// Compute the rename map. This is a mapping from original file name
 /// to the name it would rename the file in the next step.
@@ -47,15 +47,67 @@ pub fn compute_rename_map(pf_list: &Vec<ParsedFilename>) -> RenameMap {
 }
 
 /// Verifies that all files can be renamed without conflict.
-pub fn can_rename_all(dir: &Path, rn_map: &RenameMap) -> Result<(), NFLZError> {
+pub fn can_rename_all(
+    dir: &Path,
+    rn_map: &RenameMap,
+    pf_list: &Vec<ParsedFilename>,
+) -> Result<(), NFLZError> {
+    can_rename_all__destination_files(dir, rn_map)?;
+    can_rename_all__same_suffix_and_prefix(pf_list)?;
+    Ok(())
+}
+
+/// Renames all files according to the mappings in the rename map
+/// if [`can_rename_all`] returns `Ok`.
+pub fn rename_all(dir: &Path,
+                      rn_map: &RenameMap,
+                      pf_list: &Vec<ParsedFilename>) -> Result<(), NFLZError> {
+    can_rename_all(dir, rn_map, pf_list)?;
+    crate::fsutil::rename_all_files(&rn_map)?;
+    Ok(())
+}
+
+#[allow(non_snake_case)]
+fn can_rename_all__destination_files(dir: &Path, rn_map: &RenameMap) -> Result<(), NFLZError> {
     let new_names_ref = rn_map.values();
     let conflicting_files = check_for_existing_files(dir, new_names_ref);
-    if conflicting_files.is_empty() {
-        Ok(())
-    } else {
+
+    // check that now file with one of the new names already exists
+    if !conflicting_files.is_empty() {
         Err(NFLZError::ConflictingFiles(
             conflicting_files.iter().map(|s| s.to_string()).collect(),
         ))
+    } else {
+        Ok(())
+    }
+}
+
+#[allow(non_snake_case)]
+fn can_rename_all__same_suffix_and_prefix(pf_list: &Vec<ParsedFilename>) -> Result<(), NFLZError> {
+    let mut prefix_set = HashSet::new();
+    let mut suffix_set = HashSet::new();
+
+    for pf in pf_list {
+        prefix_set.insert(pf.filename_prefix());
+        suffix_set.insert(pf.filename_suffix());
+    }
+
+    if prefix_set.len() > 1 {
+        Err(NFLZError::AmbiguousPrefixes(
+            prefix_set
+                .into_iter()
+                .map(|s| s.to_string())
+                .collect::<HashSet<String>>(),
+        ))
+    } else if suffix_set.len() > 1 {
+        Err(NFLZError::AmbiguousSuffixes(
+            suffix_set
+                .into_iter()
+                .map(|s| s.to_string())
+                .collect::<HashSet<String>>(),
+        ))
+    } else {
+        Ok(())
     }
 }
 

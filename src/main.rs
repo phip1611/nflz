@@ -1,5 +1,4 @@
 use std::io::stdin;
-use nflz::{get_renamable_files, can_rename_all, NFLZError};
 use std::process::exit;
 use std::path::{Path, PathBuf};
 
@@ -13,11 +12,12 @@ fn main() {
         eprintln!("NFLZ: using dir: {:?}", dir);
     }
 
-    let rn_map = get_renamable_files(dir.as_path()).unwrap();
-    if let Err(e) = can_rename_all(dir.as_path(), &rn_map) {
+    let pf_list = nflz::get_matching_files(&dir).unwrap();
+    let rn_map = nflz::compute_rename_map(&pf_list);
+    if let Err(e) = nflz::can_rename_all(dir.as_path(), &rn_map, &pf_list) {
         eprintln!("Can't rename the following files");
         match e {
-            NFLZError::ConflictingFiles(files) => {
+            nflz::NFLZError::ConflictingFiles(files) => {
                 println!("{:#?}", &files)
             }
             _ => {}
@@ -30,7 +30,7 @@ fn main() {
         .map(|k| k.len())
         .max()
         .unwrap_or(0);
-    for (old_name, new_name) in rn_map {
+    for (old_name, new_name) in &rn_map {
         println!("{}{} => {}", " ".repeat(longest_old_name - old_name.len()), old_name, new_name);
     }
 
@@ -40,7 +40,7 @@ fn main() {
         exit(0);
     }
 
-
+    let _res = nflz::rename_all(&dir, &rn_map, &pf_list).unwrap();
 }
 
 /// Returns either PWD or the dir specified by first argument as [`PathBuf`].

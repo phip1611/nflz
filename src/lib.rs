@@ -1,22 +1,29 @@
+//! Library to handle "numbered (ascending) filenames with leading zeroes"
+//! It provides the functionality to fetch all files in a given directory,
+//! that match the pattern `<prefix>(<number>)<suffix)`, like `paris (101).jpg`.
+//! The library can provide you the following functionality:
+//! * `paris (1).png` => `paris (001).png`
+//! * `paris (2).png` => `paris (002).png`
+//! * ...
+//! * `paris (31).png` => `paris (031).png`
+//! * `paris (100).png` => `paris (100).png`
+
 mod parse;
 mod error;
 mod fsutil;
-mod rename;
+mod nflz;
 
+/// See [`error::NFLZError`].
+pub use error::NFLZError;
 
-use std::path::Path;
-use crate::rename::{RenameMap, compute_rename_map};
-pub use crate::error::NFLZError;
+/// See [`fsutil::get_matching_files`].
+pub use fsutil::get_matching_files;
 
-/// Function to verify all renames from [`get_renameable_files`] without renaming it.
-pub use rename::can_rename_all;
-/// Actually reanems all files from [`get_renameable_files`]. Make sure to call
-/// [`can_rename_all`] first.
-pub use fsutil::rename_all;
+/// See [`nflz::compute_rename_map`].
+pub use nflz::compute_rename_map;
 
-/// Returns all renameable files in the given directory.
-pub fn get_renamable_files(dir: &Path) -> Result<RenameMap, NFLZError> {
-    let files = fsutil::get_matching_files(dir)?;
-    Ok(compute_rename_map(&files))
-}
+/// See [`nflz::can_rename_all`].
+pub use nflz::can_rename_all;
 
+/// See [`nflz::rename_all`].
+pub use nflz::rename_all;

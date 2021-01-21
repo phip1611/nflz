@@ -2,15 +2,14 @@
 
 use crate::error::NFLZError;
 use crate::parse::ParsedFilename;
-use crate::rename::RenameMap;
+use crate::nflz::RenameMap;
 use std::collections::btree_map::Values;
-use std::collections::BTreeMap;
 use std::fs;
 use std::path::Path;
 
 /// Reads all matching files from the specified directory with
 /// a depth of 0, i.e. it only look for files in subdirectories.
-pub(crate) fn get_matching_files(dir_path: &Path) -> Result<Vec<ParsedFilename>, NFLZError> {
+pub fn get_matching_files(dir_path: &Path) -> Result<Vec<ParsedFilename>, NFLZError> {
     let all_files = read_directory_files(dir_path)?;
     let valid_files = all_files
         .into_iter()
@@ -80,7 +79,7 @@ pub(crate) fn check_for_existing_files<'a>(
 }
 
 /// Renames all files. Make sure to check first if there are conflicts.
-pub fn rename_all(rn_map: &RenameMap) -> Result<(), NFLZError> {
+pub(crate) fn rename_all_files(rn_map: &RenameMap) -> Result<(), NFLZError> {
     for (old, new) in rn_map {
         fs::rename(old, new)
             .map_err(|io_err| NFLZError::RenameFailed(old.to_owned(), new.to_owned(), io_err))?
