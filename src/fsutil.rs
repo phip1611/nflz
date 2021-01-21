@@ -50,7 +50,7 @@ fn read_directory_files(dir_path: &Path) -> Result<Vec<String>, NFLZError> {
         // for example "paris (12).jpg"
         let filename = entry.file_name();
         let path = entry.path();
-        if path.is_file() && path.extension().is_some() {
+        if path.is_file() {
             filepaths.push(filename);
         }
     }
@@ -97,7 +97,7 @@ mod tests {
         let dir = std::env::current_dir().unwrap();
         let path = format!("{}/test", dir.as_path().to_str().unwrap());
         let files = read_directory_files(path.as_ref()).unwrap();
-        assert_eq!(14, files.len())
+        assert_eq!(12, files.len())
     }
 
     #[test]

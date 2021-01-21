@@ -32,11 +32,10 @@ pub fn compute_rename_map(pf_list: &Vec<ParsedFilename>) -> RenameMap {
             pf.number_group_value()
         );
         let new_filename = format!(
-            "{}({}){}.{}",
-            pf.actual_filename_prefix(),
+            "{}{}{}",
+            pf.filename_prefix(),
             value_str_with_leading_zeroes,
-            pf.actual_filename_suffix(),
-            pf.extension()
+            pf.filename_suffix(),
         );
 
         // avoid unnecessary renames

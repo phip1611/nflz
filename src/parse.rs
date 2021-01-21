@@ -17,17 +17,15 @@ pub struct ParsedFilename {
 }
 
 impl ParsedFilename {
-    pub fn new(full_filename: String) -> Result<Self, NFLZError> {
-        let (actual_filename, _extension) = split_filename(&full_filename);
-        let number_group_indices = get_number_group_indices_from_actual_filename(actual_filename)?;
-        let from = number_group_indices.0 as usize + 1; // remove parentheses
-        let to = number_group_indices.1 as usize - 1; // remove parentheses
-        let number_group_value_str = &actual_filename[from .. to];
+    pub fn new(original_filename: String) -> Result<Self, NFLZError> {
+        let number_group_indices = get_number_group_indices_from_actual_filename(&original_filename)?;
+        let (from, to) = number_group_indices;
+        let number_group_value_str = &original_filename[from as usize .. to as usize];
         let number_group_value = u64::from_str(number_group_value_str)
             .map_err(|_| NFLZError::ValueInNumberedGroupInvalid(number_group_value_str.to_string()))?;
 
         Ok(ParsedFilename {
-            original_filename: full_filename,
+            original_filename,
             number_group_indices,
             number_group_value,
         })
@@ -37,27 +35,18 @@ impl ParsedFilename {
     pub fn original_filename(&self) -> &str {
         &self.original_filename
     }
-    /// Getter for field `actual_filename`.
-    pub fn actual_filename(&self) -> &str {
-        let (actual_filename, _) = split_filename(self.original_filename());
-        actual_filename
-    }
-    /// Getter for field `actual_filename_prefix`.
-    pub fn actual_filename_prefix(&self) -> &str {
+
+    /// Suffix including "(" before the number group inside field [`original_filename`].
+    pub fn filename_prefix(&self) -> &str {
         let (prefix, _) =
-            get_filename_prefix_and_suffix(self.actual_filename(), self.number_group_indices());
+            get_filename_prefix_and_suffix(self.original_filename(), self.number_group_indices());
         prefix
     }
-    /// Getter for field `actual_filename_suffix`.
-    pub fn actual_filename_suffix(&self) -> &str {
+    /// Prefix including ")" after the number group inside field [`original_filename`].
+    pub fn filename_suffix(&self) -> &str {
         let (_, suffix) =
-            get_filename_prefix_and_suffix(self.actual_filename(), self.number_group_indices());
+            get_filename_prefix_and_suffix(self.original_filename(), self.number_group_indices());
         suffix
-    }
-    /// Getter for field `extension`.
-    pub fn extension(&self) -> &str {
-        let (_, extension) = split_filename(self.original_filename());
-        extension
     }
     /// Getter for field `number_group_indices`.
     pub fn number_group_indices(&self) -> (u16, u16) {
@@ -73,17 +62,6 @@ impl Display for ParsedFilename {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
         f.write_str(&format!("ParsedFilename({})", self.original_filename))
     }
-}
-
-/// Splits a complete filename into the actual filename
-/// and the extension. `"img (1).jpg"` will become `["img (1)", "jpg"]`
-/// whereas `"img (1).foobar.jpg"` will become `["img (1)", "foobar.jpg"]`
-fn split_filename(filename: &str) -> (&str, &str) {
-    let index = filename
-        .find('.')
-        .expect(&format!("Input ('{}') must be a filename with an extension!", filename));
-    // +1 to skip leading "."
-    (&filename[0..index], &filename[index + 1..filename.len()])
 }
 
 /// Returns either Ok with the indices of the number group or Err. The index
@@ -108,7 +86,10 @@ fn get_number_group_indices_from_actual_filename(
             actual_filename.to_string(),
         ))
     } else {
-        Ok(match_indices[0])
+        // +-1: remove parentheses
+        let from = match_indices[0].0 + 1;
+        let to = match_indices[0].1 - 1;
+        Ok((from, to))
     }
 }
 
@@ -127,25 +108,6 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_split_filename() {
-        let input1 = "img (1).jpg";
-        let input2 = "img (1).foobar.jpg";
-
-        let expected_actual_filename_1 = "img (1)";
-        let expected_extension_1 = "jpg";
-        let expected_actual_filename_2 = "img (1)";
-        let expected_extension_2 = "foobar.jpg";
-
-        let (actual_actual_filename_1, actual_extension_1) = split_filename(input1);
-        let (actual_actual_filename_2, actual_extension_2) = split_filename(input2);
-
-        assert_eq!(expected_actual_filename_1, actual_actual_filename_1);
-        assert_eq!(expected_actual_filename_2, actual_actual_filename_2);
-        assert_eq!(expected_extension_1, actual_extension_1);
-        assert_eq!(expected_extension_2, actual_extension_2);
-    }
-
-    #[test]
     fn test_get_number_group_indices_from_actual_filename() {
         let input1 = "img (100)";
         let input2 = "img (1) (100)";
@@ -153,11 +115,11 @@ mod tests {
 
         let actual1 = get_number_group_indices_from_actual_filename(input1).unwrap();
         assert_eq!(
-            4, actual1.0,
+            5, actual1.0,
             "Number parentheses group starts at index 4 (inclusive)"
         );
         assert_eq!(
-            9, actual1.1,
+            8, actual1.1,
             "Number parentheses group ends at index 9 (exclusive)"
         );
 
@@ -166,39 +128,37 @@ mod tests {
 
         let actual3 = get_number_group_indices_from_actual_filename(input3).unwrap();
         assert_eq!(
-            4, actual3.0,
+            5, actual3.0,
             "Number parentheses group starts at index 4 (inclusive)"
         );
         assert_eq!(
-            7, actual3.1,
+            6, actual3.1,
             "Number parentheses group ends at index 9 (exclusive)"
         );
     }
 
     #[test]
     fn test_get_filename_prefix_and_suffix() {
-        let input1 = "img (100)";
+        let input1 = "img (100).jpg";
         let indices1 = get_number_group_indices_from_actual_filename(input1).unwrap();
         let (prefix1, suffix1) = get_filename_prefix_and_suffix(input1, indices1);
-        assert_eq!("img ", prefix1);
-        assert_eq!("", suffix1);
+        assert_eq!("img (", prefix1);
+        assert_eq!(").jpg", suffix1);
 
-        let input2 = "(100) foobar";
+        let input2 = "(100) foobar.png";
         let indices2 = get_number_group_indices_from_actual_filename(input2).unwrap();
         let (prefix2, suffix2) = get_filename_prefix_and_suffix(input2, indices2);
-        assert_eq!("", prefix2);
-        assert_eq!(" foobar", suffix2);
+        assert_eq!("(", prefix2);
+        assert_eq!(") foobar.png", suffix2);
     }
 
     #[test]
     fn test_struct_parsed_filename() {
         let filename1 = "paris (100).png";
         let parsed = ParsedFilename::new(filename1.to_owned()).expect("Must be valid");
-        assert_eq!((6, 11), parsed.number_group_indices());
-        assert_eq!("paris (100)", parsed.actual_filename());
-        assert_eq!("png", parsed.extension());
-        assert_eq!("paris ", parsed.actual_filename_prefix());
-        assert_eq!("", parsed.actual_filename_suffix());
+        assert_eq!((7, 10), parsed.number_group_indices());
+        assert_eq!("paris (", parsed.filename_prefix());
+        assert_eq!(").png", parsed.filename_suffix());
         assert_eq!(100, parsed.number_group_value());
     }
 }
