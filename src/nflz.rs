@@ -173,7 +173,7 @@ mod tests {
         let dir = std::env::current_dir().unwrap();
         let path = format!("{}/test", dir.as_path().to_str().unwrap());
         let files = get_matching_files(path.as_ref()).unwrap();
-        let rn_map = compute_rename_map(&files);
+        let (rn_map, _) = compute_rename_map(&files);
 
         for i in 1..10 {
             let expected = format!("paris (00{}).jpg", i);
@@ -196,7 +196,7 @@ mod tests {
         let dir = std::env::current_dir().unwrap();
         let path = format!("{}/test", dir.as_path().to_str().unwrap());
         let files = get_matching_files(path.as_ref()).unwrap();
-        let rn_map = compute_rename_map(&files);
+        let (rn_map, _) = compute_rename_map(&files);
         assert!(can_rename_all(path.as_ref(), &rn_map, &files).is_ok());
     }
 }
