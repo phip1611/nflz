@@ -33,6 +33,7 @@ use crate::parse::ParsedFilename;
 
 /// Reads all matching files from the specified directory with
 /// a depth of 0, i.e. it only look for files in subdirectories.
+/// * `dir` Directory to search for files
 pub fn get_matching_files(dir_path: &Path) -> Result<Vec<ParsedFilename>, NFLZError> {
     let all_files = read_directory_files(dir_path)?;
     let valid_files = all_files

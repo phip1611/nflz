@@ -29,14 +29,14 @@ fn main() {
     let dir = get_dir();
 
     if !dir.is_dir() {
-        eprint!("NFLZ: {:?} is not a directory.", dir);
+        eprintln!("NFLZ: {:?} is not a directory.", dir);
         exit(-1);
     } else {
         eprintln!("NFLZ: using dir: {:?}", dir);
     }
 
     let pf_list = nflz::get_matching_files(&dir).unwrap();
-    let rn_map = nflz::compute_rename_map(&pf_list);
+    let (rn_map, skipped_files) = nflz::compute_rename_map(&pf_list);
     if let Err(e) = nflz::can_rename_all(dir.as_path(), &rn_map, &pf_list) {
         eprintln!("Abort because at least one rename operation would result in a file that already exists:");
         match e {
@@ -48,6 +48,10 @@ fn main() {
         exit(-1)
     }
 
+    println!("Would skip files:");
+    for skipped_file in skipped_files {
+        println!("  {}", skipped_file);
+    }
     println!("Would rename files:");
     let longest_old_name = rn_map
         .keys()
@@ -57,7 +61,7 @@ fn main() {
         .unwrap_or(0);
     for (old_file, new_name) in &rn_map {
         println!(
-            "{}{} => {}",
+            "  {}{} => {}",
             " ".repeat(longest_old_name - old_file.original_filename().len()),
             old_file,
             new_name

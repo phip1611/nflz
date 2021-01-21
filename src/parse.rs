@@ -114,7 +114,7 @@ impl ParsedFilename {
 
 impl Display for ParsedFilename {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
-        f.write_str(&format!("ParsedFilename({})", self.original_filename))
+        f.write_str(&format!("{}", self.original_filename))
     }
 }
 

@@ -32,9 +32,9 @@ SOFTWARE.
 //! * `paris (100).png` => `paris (100).png`
 
 /// See [`error::NFLZError`].
-pub use error::NFLZError;
+pub use crate::error::NFLZError;
 /// See [`fsutil::get_matching_files`].
-pub use fsutil::get_matching_files;
+pub use crate::fsutil::get_matching_files;
 /// See [`nflz::can_rename_all`].
 pub use crate::nflz::can_rename_all;
 /// See [`nflz::compute_rename_map`].

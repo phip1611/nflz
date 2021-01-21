@@ -30,15 +30,24 @@ use crate::error::NFLZError;
 use crate::fsutil::check_for_existing_files;
 use crate::parse::ParsedFilename;
 
+/// Describes the rename data. Mapping from old name to new name.
 pub type RenameMap = BTreeMap<ParsedFilename, String>;
 
 /// Compute the rename map. This is a mapping from original file name
 /// to the name it would rename the file in the next step.
 /// It avoids unnecessary renames (oldname == newname).
-pub fn compute_rename_map(pf_list: &Vec<ParsedFilename>) -> RenameMap {
+///
+/// ## Parameters
+/// * `pf_list`: All files obtained by [`crate::fsutil::get_matching_files`]
+///
+/// ## Return value
+/// It returns a tuple with the rename map (old name to new name) and files that do not
+/// need a rename.
+pub fn compute_rename_map(pf_list: &Vec<ParsedFilename>) -> (RenameMap, Vec<String>) {
     let mut map = BTreeMap::new();
+    let mut no_rename_required_file_list = vec![];
     if pf_list.is_empty() {
-        return map;
+        return (map, no_rename_required_file_list);
     }
 
     let nums = pf_list
@@ -65,12 +74,18 @@ pub fn compute_rename_map(pf_list: &Vec<ParsedFilename>) -> RenameMap {
         // avoid unnecessary renames
         if pf.original_filename() != new_filename {
             map.insert(pf.clone(), new_filename);
+        } else {
+            no_rename_required_file_list.push(new_filename.to_string());
         }
     }
-    map
+
+    (map, no_rename_required_file_list)
 }
 
 /// Verifies that all files can be renamed without conflict.
+/// * `dir` Directory where all replacements happen. Needed to make some checks before the actual renaming starts.
+/// * `rn_map` Map with the mappings from old to new names.
+/// * `pf_list` List with parsed filenames. Needed to make some checks before the actual renaming starts.
 pub fn can_rename_all(
     dir: &Path,
     rn_map: &RenameMap,
@@ -83,6 +98,9 @@ pub fn can_rename_all(
 
 /// Renames all files according to the mappings in the rename map
 /// if [`can_rename_all`] returns `Ok`.
+/// * `dir` Directory where all replacements happen. Only needed to make some checks before the actual renaming starts.
+/// * `rn_map` Map with the mappings from old to new names.
+/// * `pf_list` List with parsed filenames. Only needed to make some checks before the actual renaming starts.
 pub fn rename_all(
     dir: &Path,
     rn_map: &RenameMap,
