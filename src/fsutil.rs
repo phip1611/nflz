@@ -14,7 +14,6 @@ pub(crate) fn get_matching_files(dir_path: &Path) -> Result<Vec<ParsedFilename>,
     let all_files = read_directory_files(dir_path)?;
     let valid_files = all_files
         .into_iter()
-       // .filter(||)
         .map(|filename| ParsedFilename::new(filename))
         .filter(|pf| {
             if pf.is_err() {
@@ -50,7 +49,8 @@ fn read_directory_files(dir_path: &Path) -> Result<Vec<String>, NFLZError> {
         // file_name returns "just" the filename without the full path! that's what we need!
         // for example "paris (12).jpg"
         let filename = entry.file_name();
-        if entry.path().is_file() {
+        let path = entry.path();
+        if path.is_file() && path.extension().is_some() {
             filepaths.push(filename);
         }
     }

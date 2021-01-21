@@ -12,13 +12,17 @@ pub type RenameMap = BTreeMap<String, String>;
 /// to the name it would rename the file in the next step.
 /// It avoids unnecessary renames (oldname == newname).
 pub fn compute_rename_map(pf_list: &Vec<ParsedFilename>) -> RenameMap {
+    let mut map = BTreeMap::new();
+    if pf_list.is_empty() {
+        return map;
+    }
+
     let nums = pf_list
         .iter()
         .map(|pf| pf.number_group_value())
         .collect::<Vec<u64>>();
     let max = nums.iter().max().unwrap();
     let max_digits = digits(*max);
-    let mut map = BTreeMap::new();
     for pf in pf_list {
         let digits = digits(pf.number_group_value());
         let add_digits_count = max_digits - digits;
