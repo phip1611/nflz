@@ -1,28 +1,59 @@
 //! Module for parsing of file names.
 
-use crate::error::NFLZError;
-use regex::Regex;
+use std::cmp::Ordering;
 use std::fmt;
 use std::fmt::{Display, Formatter};
 use std::str::FromStr;
 
+use regex::Regex;
+
+use crate::error::NFLZError;
+
 /// Represents a parsed filename that matches
 /// the contract of this library, i.e. only files
 /// that can be renamed successfully.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct ParsedFilename {
     original_filename: String,
     number_group_indices: (u16, u16),
     number_group_value: u64,
 }
 
+impl PartialOrd for ParsedFilename {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(if self.number_group_value() > other.number_group_value() {
+            Ordering::Greater
+        } else if self.number_group_value() == other.number_group_value() {
+            Ordering::Equal
+        } else {
+            Ordering::Less
+        })
+    }
+}
+
+impl PartialEq for ParsedFilename {
+    fn eq(&self, other: &Self) -> bool {
+        self.original_filename() == other.original_filename()
+    }
+}
+
+impl Eq for ParsedFilename {}
+
+impl Ord for ParsedFilename {
+    fn cmp(&self, other: &Self) -> Ordering {
+        self.partial_cmp(other).unwrap()
+    }
+}
+
 impl ParsedFilename {
     pub fn new(original_filename: String) -> Result<Self, NFLZError> {
-        let number_group_indices = get_number_group_indices_from_actual_filename(&original_filename)?;
+        let number_group_indices =
+            get_number_group_indices_from_actual_filename(&original_filename)?;
         let (from, to) = number_group_indices;
-        let number_group_value_str = &original_filename[from as usize .. to as usize];
-        let number_group_value = u64::from_str(number_group_value_str)
-            .map_err(|_| NFLZError::ValueInNumberedGroupInvalid(number_group_value_str.to_string()))?;
+        let number_group_value_str = &original_filename[from as usize..to as usize];
+        let number_group_value = u64::from_str(number_group_value_str).map_err(|_| {
+            NFLZError::ValueInNumberedGroupInvalid(number_group_value_str.to_string())
+        })?;
 
         Ok(ParsedFilename {
             original_filename,
@@ -160,5 +191,21 @@ mod tests {
         assert_eq!("paris (", parsed.filename_prefix());
         assert_eq!(").png", parsed.filename_suffix());
         assert_eq!(100, parsed.number_group_value());
+    }
+
+    #[test]
+    fn test_parsed_filename() {
+        let p1 = ParsedFilename::new("img (1).png".to_string()).unwrap();
+        let p1_same = ParsedFilename::new("img (1).png".to_string()).unwrap();
+        let p2 = ParsedFilename::new("img (2).png".to_string()).unwrap();
+        assert_eq!(
+            p1, p1_same,
+            "Two ParsedFilenames are equal if the point to the same original filename."
+        );
+        assert_ne!(
+            p1, p2,
+            "Two ParsedFilenames are equal if the point to the same original filename."
+        );
+        assert!(p1 < p2, "One ParsedFilename is smaller than the other if the number inside the filename is lower.");
     }
 }

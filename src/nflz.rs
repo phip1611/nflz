@@ -1,12 +1,13 @@
 //! Module related to renaming files.
 
-use crate::error::NFLZError;
-use crate::fsutil::check_for_existing_files;
-use crate::parse::ParsedFilename;
 use std::collections::{BTreeMap, HashSet};
 use std::path::Path;
 
-pub type RenameMap = BTreeMap<Parse, String>;
+use crate::error::NFLZError;
+use crate::fsutil::check_for_existing_files;
+use crate::parse::ParsedFilename;
+
+pub type RenameMap = BTreeMap<ParsedFilename, String>;
 
 /// Compute the rename map. This is a mapping from original file name
 /// to the name it would rename the file in the next step.
@@ -40,7 +41,7 @@ pub fn compute_rename_map(pf_list: &Vec<ParsedFilename>) -> RenameMap {
 
         // avoid unnecessary renames
         if pf.original_filename() != new_filename {
-            map.insert(pf.original_filename().to_string(), new_filename);
+            map.insert(pf.clone(), new_filename);
         }
     }
     map
@@ -59,9 +60,11 @@ pub fn can_rename_all(
 
 /// Renames all files according to the mappings in the rename map
 /// if [`can_rename_all`] returns `Ok`.
-pub fn rename_all(dir: &Path,
-                      rn_map: &RenameMap,
-                      pf_list: &Vec<ParsedFilename>) -> Result<(), NFLZError> {
+pub fn rename_all(
+    dir: &Path,
+    rn_map: &RenameMap,
+    pf_list: &Vec<ParsedFilename>,
+) -> Result<(), NFLZError> {
     can_rename_all(dir, rn_map, pf_list)?;
     crate::fsutil::rename_all_files(&rn_map)?;
     Ok(())
@@ -120,8 +123,9 @@ fn digits(number: u64) -> u32 {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use crate::fsutil::get_matching_files;
+
+    use super::*;
 
     #[test]
     fn test_compute_rename_map() {
@@ -131,14 +135,19 @@ mod tests {
         let rn_map = compute_rename_map(&files);
 
         for i in 1..10 {
-            let left_name = format!("paris (00{}).jpg", i);
-            let right_name = format!("paris ({}).jpg", i);
-            assert_eq!(left_name, *rn_map.get(&right_name).unwrap());
-
-            assert_eq!("paris (010).jpg", rn_map.get("paris (10).jpg").unwrap());
-            // no rename necessary
-            assert!(!rn_map.contains_key("paris (734).jpg"));
+            let expected = format!("paris (00{}).jpg", i);
+            let input = ParsedFilename::new(format!("paris ({}).jpg", i)).unwrap();
+            assert_eq!(expected, *rn_map.get(&input).unwrap());
         }
+
+        let expected_paris10 = ParsedFilename::new("paris (10).jpg".to_string()).unwrap();
+
+        assert_eq!("paris (010).jpg", *rn_map.get(&expected_paris10).unwrap());
+
+        // no rename necessary
+
+        let not_expected_paris734 = ParsedFilename::new("paris (734).jpg".to_string()).unwrap();
+        assert!(!rn_map.contains_key(&not_expected_paris734));
     }
 
     #[test]
@@ -147,6 +156,6 @@ mod tests {
         let path = format!("{}/test", dir.as_path().to_str().unwrap());
         let files = get_matching_files(path.as_ref()).unwrap();
         let rn_map = compute_rename_map(&files);
-        assert!(can_rename_all(path.as_ref(), &rn_map).is_ok());
+        assert!(can_rename_all(path.as_ref(), &rn_map, &files).is_ok());
     }
 }

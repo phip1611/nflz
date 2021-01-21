@@ -1,9 +1,9 @@
 //! Module for errors inside NFLZ library.
 
+use std::collections::HashSet;
 use std::error::Error;
 use std::fmt;
 use std::fmt::{Display, Formatter};
-use std::collections::HashSet;
 
 #[derive(Debug)]
 pub enum NFLZError {
@@ -51,9 +51,7 @@ impl Display for NFLZError {
             )),
             NFLZError::RenameFailed(old_filename, new_filename, os_err) => f.write_str(&format!(
                 "Can't rename file '{}' to '{}' because: {}",
-                old_filename,
-                new_filename,
-                os_err,
+                old_filename, new_filename, os_err,
             )),
             NFLZError::AmbiguousSuffixes(suffixes) => f.write_str(&format!(
                 "There are multiple (and therefore ambiguous) suffixes in this directory: {:?}",

@@ -8,22 +8,18 @@
 //! * `paris (31).png` => `paris (031).png`
 //! * `paris (100).png` => `paris (100).png`
 
-mod parse;
+/// See [`error::NFLZError`].
+pub use error::NFLZError;
+/// See [`fsutil::get_matching_files`].
+pub use fsutil::get_matching_files;
+/// See [`nflz::can_rename_all`].
+pub use nflz::can_rename_all;
+/// See [`nflz::compute_rename_map`].
+pub use nflz::compute_rename_map;
+/// See [`nflz::rename_all`].
+pub use nflz::rename_all;
+
 mod error;
 mod fsutil;
 mod nflz;
-
-/// See [`error::NFLZError`].
-pub use error::NFLZError;
-
-/// See [`fsutil::get_matching_files`].
-pub use fsutil::get_matching_files;
-
-/// See [`nflz::compute_rename_map`].
-pub use nflz::compute_rename_map;
-
-/// See [`nflz::can_rename_all`].
-pub use nflz::can_rename_all;
-
-/// See [`nflz::rename_all`].
-pub use nflz::rename_all;
+mod parse;

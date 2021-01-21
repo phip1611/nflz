@@ -1,11 +1,12 @@
 //! Utility functions to interact with the file system.
 
-use crate::error::NFLZError;
-use crate::parse::ParsedFilename;
-use crate::nflz::RenameMap;
 use std::collections::btree_map::Values;
 use std::fs;
 use std::path::Path;
+
+use crate::error::NFLZError;
+use crate::nflz::RenameMap;
+use crate::parse::ParsedFilename;
 
 /// Reads all matching files from the specified directory with
 /// a depth of 0, i.e. it only look for files in subdirectories.
@@ -65,12 +66,14 @@ fn read_directory_files(dir_path: &Path) -> Result<Vec<String>, NFLZError> {
 /// Returns a list of all files that do exist yet.
 pub(crate) fn check_for_existing_files<'a>(
     dir: &Path,
-    new_names: Values<'a, String, String>,
+    new_names: Values<'a, ParsedFilename, String>,
 ) -> Vec<&'a str> {
     let mut existing_files_with_new_name = vec![];
     let iter = new_names.into_iter();
     for new_name in iter {
-        let path = format!("{}/{}", dir.to_str().unwrap(), new_name);
+        let mut path_buf = dir.to_path_buf();
+        path_buf.push(new_name);
+        let path = path_buf.as_path();
         if Path::new(&path).is_file() {
             existing_files_with_new_name.push(new_name.as_str())
         }
@@ -81,14 +84,17 @@ pub(crate) fn check_for_existing_files<'a>(
 /// Renames all files. Make sure to check first if there are conflicts.
 pub(crate) fn rename_all_files(rn_map: &RenameMap) -> Result<(), NFLZError> {
     for (old, new) in rn_map {
-        fs::rename(old, new)
-            .map_err(|io_err| NFLZError::RenameFailed(old.to_owned(), new.to_owned(), io_err))?
+        fs::rename(old.original_filename(), new).map_err(|io_err| {
+            NFLZError::RenameFailed(old.original_filename().to_owned(), new.to_owned(), io_err)
+        })?
     }
     Ok(())
 }
 
 #[cfg(test)]
 mod tests {
+    use std::collections::BTreeMap;
+
     use super::*;
 
     #[test]
@@ -117,9 +123,16 @@ mod tests {
         let path = format!("{}/test", dir.as_path().to_str().unwrap());
 
         let mut rn_map = BTreeMap::new();
-        rn_map.insert(String::from("1"), "paris (1).jpg".to_string());
-        rn_map.insert(String::from("2"), "paris (001).jpg".to_string());
+        rn_map.insert(
+            ParsedFilename::new("paris (1).jpg".to_owned()).unwrap(),
+            "paris (1).jpg".to_string(),
+        );
+        rn_map.insert(
+            ParsedFilename::new("paris (1414).jpg".to_owned()).unwrap(),
+            "paris (1414).jpg".to_string(),
+        );
         let values_ref = rn_map.values();
+        println!("values_ref: {:#?}", values_ref);
         let existing_files = check_for_existing_files(&Path::new(&path), values_ref);
         assert_eq!(1, existing_files.len());
         assert_eq!("paris (1).jpg", existing_files[0]);
