@@ -23,9 +23,24 @@ fn main() {
             _ => {}
         }
         exit(-1)
-    } else {
-
     }
+
+    println!("Would rename files:");
+    let longest_old_name = rn_map.keys().into_iter()
+        .map(|k| k.len())
+        .max()
+        .unwrap_or(0);
+    for (old_name, new_name) in rn_map {
+        println!("{}{} => {}", " ".repeat(longest_old_name - old_name.len()), old_name, new_name);
+    }
+
+    let res = ask_for_confirmation();
+    if !res {
+        eprintln!("Exited");
+        exit(0);
+    }
+
+
 }
 
 /// Returns either PWD or the dir specified by first argument as [`PathBuf`].
@@ -45,7 +60,7 @@ fn ask_for_confirmation() -> bool {
     match stdin().read_line(&mut input) {
         Ok(_s) => {
             // Strings equal?
-            input.trim() == String::from("y") // trim to remove \r\n | \n
+            input.trim().to_lowercase() == "y" // trim to remove \r\n | \n
         }
         Err(_) => false
     }

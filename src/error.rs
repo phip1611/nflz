@@ -31,11 +31,11 @@ impl Display for NFLZError {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self {
             NFLZError::FilenameMustIncludeExactlyOneNumberedGroup(fln) => f.write_str(&format!(
-                "The filename ('{}') must include exactly one numbered group.",
+                "The filename '{}' must include exactly one numbered group.",
                 fln
             )),
             NFLZError::ValueInNumberedGroupInvalid(value) => f.write_str(&format!(
-                "The value ('{}') in the numbered group is not a number.",
+                "The value '{}' in the numbered group is not a number.",
                 value
             )),
             NFLZError::CantReadDirectory(value, os_err) => f.write_str(&format!(
