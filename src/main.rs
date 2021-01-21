@@ -48,11 +48,11 @@ fn main() {
         exit(-1)
     }
 
-    println!("Would skip files:");
+    println!("NFLZ: Files that don't need a renaming:");
     for skipped_file in skipped_files {
         println!("  {}", skipped_file);
     }
-    println!("Would rename files:");
+    println!("NFLZ would rename files:");
     let longest_old_name = rn_map
         .keys()
         .into_iter()
@@ -90,6 +90,8 @@ fn get_dir() -> PathBuf {
 /// Asks the user to confirm the action.
 fn ask_for_confirmation() -> bool {
     println!("\nPlease confirm with 'y' or abort with 'n'");
+    println!("NFLZ can't guarantee you 100% safety. Always make a backup first (:");
+    println!("But at my best will this should work when no catastrophic failure is happening.");
     let mut input = String::new();
     match stdin().read_line(&mut input) {
         Ok(_s) => {
