@@ -1,7 +1,7 @@
 /*
 MIT License
 
-Copyright (c) 2021 Philipp Schuster
+Copyright (c) 2022 Philipp Schuster
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -21,28 +21,74 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
-//! Library to handle "numbered (ascending) filenames with leading zeros"
-//! It provides the functionality to fetch all files in a given directory,
-//! that match the pattern `<prefix>(<number>)<suffix)`, like `paris (101).jpg`.
-//! The library can provide you the following functionality:
-//! * `paris (1).png` => `paris (001).png`
-//! * `paris (2).png` => `paris (002).png`
-//! * ...
-//! * `paris (31).png` => `paris (031).png`
-//! * `paris (100).png` => `paris (100).png`
+//! # NFLZ (library)
+//! Library to add leading zeros to ascending numbered file names. NFLZ stands for Numbered Files Leading Zeros.
+//!
+//! This library helps you to manage files inside your file system that belong to a set of ordered
+//! files. An example are photos from a camera.
+//!
+//! [`NFLZAssistant`] is the main entry point into the library. Please check examples inside
+//! the README or the repository.
+//!
+//! ## What it Does
+//! **Content of some directory:**
+//! ```text
+//! paris (1).png   =>  paris (01).png
+//! paris (2).png   =>  paris (02).png
+//! ...
+//! paris (12).png  =>  paris (12).png
+//! ...
+//! paris (n).png   =>  n digits => indicator for how many zeros to add
+//! ```
+//!
+//! # Code Example
+//! ```rust
+//! use nflz::NFLZAssistant;
+//!
+//! /// Minimal example that renames all files in the given directory.
+//! /// After the operation is done, all will include the same amount of digits
+//! /// inside their number group inside the filename.
+//! fn main() {
+//!     let assistant = NFLZAssistant::new("./test-resources").unwrap();
+//!     dbg!(assistant.files_to_rename());
+//!     // some files may already have the correct name
+//!     dbg!(assistant.files_without_rename());
+//!     if assistant.check_can_rename_all() {
+//!         assistant.rename_all().unwrap();
+//!     }
+//! }
+//! ```
+//!
+//! # Library Design
+//!
 
-/// See [`error::NFLZError`].
+#![deny(
+    clippy::all,
+    clippy::cargo,
+    clippy::nursery,
+    // clippy::restriction,
+    // clippy::pedantic
+)]
+// now allow a few rules which are denied by the above statement
+// --> they are ridiculous and not necessary
+#![allow(
+    clippy::suboptimal_flops,
+    clippy::redundant_pub_crate,
+    clippy::fallible_impl_from
+)]
+#![deny(missing_docs)]
+#![deny(missing_debug_implementations)]
+#![deny(rustdoc::all)]
+// #![allow(rustdoc::missing_doc_code_examples)]
+
+/// See [`crate::error::NFLZError`].
 pub use crate::error::NFLZError;
-/// See [`fsutil::get_matching_files`].
-pub use crate::fsutil::get_matching_files;
-/// See [`nflz::can_rename_all`].
-pub use crate::nflz::can_rename_all;
-/// See [`nflz::compute_rename_map`].
-pub use crate::nflz::compute_rename_map;
-/// See [`nflz::rename_all`].
-pub use crate::nflz::rename_all;
+
+/// See [`crate::nflz::NFLZAssistant`].
+pub use crate::nflz::NFLZAssistant;
 
 mod error;
+mod file_info;
 mod fsutil;
+mod math;
 mod nflz;
-mod parse;
