@@ -13,4 +13,4 @@ repository = "https://github.com/phip1611/nflz"
 documentation = "https://docs.rs/nflz/"
 
 [dependencies]
-regex = "1.4.3"
+regex = "1.5"
