@@ -1,7 +1,7 @@
 /*
 MIT License
 
-Copyright (c) 2021 Philipp Schuster
+Copyright (c) 2022 Philipp Schuster
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -21,33 +21,45 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
-//! Module for errors inside NFLZ library.
+//! Module for errors inside NFLZ library. See [`NFLZError`].
 
 use std::collections::HashSet;
 use std::error::Error;
 use std::fmt;
 use std::fmt::{Display, Formatter};
+use std::path::PathBuf;
 
+/// Main error of the library.
 #[derive(Debug)]
 pub enum NFLZError {
+    /// File names must include at least one numbered group.
+    /// Example: "Img (1).jpg" is valid but "Img (2) (4).jpg" is not.
     FilenameMustIncludeExactlyOneNumberedGroup(String),
-    ValueInNumberedGroupInvalid(String),
-    CantReadDirectory(String, std::io::Error),
-    ConflictingFiles(Vec<String>),
+    /// The value inside the group must be a valid number.
+    ValueInNumberedGroupNotANumber(String),
+    /// Can't read the specified directory,
+    CantReadDirectory(PathBuf, std::io::Error),
+    /// There are files that would have the same filename in the end.
+    /// Would overwrite files.
+    ConflictingFiles(Vec<PathBuf>),
+    /// The renaming failed.
     RenameFailed(String, String, std::io::Error),
-    AmbiguousSuffixes(HashSet<String>),
+    /// The prefixes of all files inside the directory before the rename group
+    /// must be unambiguous. Hence, "Img (1).jpg" and "Photo (2).jpg" will result in an error.
     AmbiguousPrefixes(HashSet<String>),
+    /// The suffixes of all files inside the directory after the rename group
+    /// must be unambiguous. Hence, "Img (1) foobar.jpg" and "Img (1) barfoo.png" will result
+    /// in an error.
+    AmbiguousSuffixes(HashSet<String>),
 }
 
 impl NFLZError {
     /// The filename that resulted in an error.
     pub fn filename(&self) -> Option<&str> {
         match self {
-            NFLZError::FilenameMustIncludeExactlyOneNumberedGroup(fln) => {
-                Option::from(fln.as_str())
-            }
-            NFLZError::ValueInNumberedGroupInvalid(fln) => Option::from(fln.as_str()),
-            NFLZError::RenameFailed(fln, _, _) => Option::from(fln.as_str()),
+            Self::FilenameMustIncludeExactlyOneNumberedGroup(fln) => Option::from(fln.as_str()),
+            Self::ValueInNumberedGroupNotANumber(fln) => Option::from(fln.as_str()),
+            Self::RenameFailed(fln, _, _) => Option::from(fln.as_str()),
             _ => None,
         }
     }
@@ -56,31 +68,32 @@ impl NFLZError {
 impl Display for NFLZError {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self {
-            NFLZError::FilenameMustIncludeExactlyOneNumberedGroup(fln) => f.write_str(&format!(
+            Self::FilenameMustIncludeExactlyOneNumberedGroup(fln) => f.write_str(&format!(
                 "The filename '{}' must include exactly one numbered group.",
                 fln
             )),
-            NFLZError::ValueInNumberedGroupInvalid(value) => f.write_str(&format!(
+            Self::ValueInNumberedGroupNotANumber(value) => f.write_str(&format!(
                 "The value '{}' in the numbered group is not a number.",
                 value
             )),
-            NFLZError::CantReadDirectory(value, os_err) => f.write_str(&format!(
+            Self::CantReadDirectory(value, os_err) => f.write_str(&format!(
                 "The directory  ('{}') or the files in it can't be read because: {}",
-                value, os_err
+                value.as_os_str().to_str().unwrap(),
+                os_err
             )),
-            NFLZError::ConflictingFiles(files) => f.write_str(&format!(
+            Self::ConflictingFiles(files) => f.write_str(&format!(
                 "Can't rename files because {} new file names are in conflict with existing ones.",
                 files.len()
             )),
-            NFLZError::RenameFailed(old_filename, new_filename, os_err) => f.write_str(&format!(
+            Self::RenameFailed(old_filename, new_filename, os_err) => f.write_str(&format!(
                 "Can't rename file '{}' to '{}' because: {}",
                 old_filename, new_filename, os_err,
             )),
-            NFLZError::AmbiguousSuffixes(suffixes) => f.write_str(&format!(
+            Self::AmbiguousSuffixes(suffixes) => f.write_str(&format!(
                 "There are multiple (and therefore ambiguous) suffixes in this directory: {:?}",
                 suffixes,
             )),
-            NFLZError::AmbiguousPrefixes(prefixes) => f.write_str(&format!(
+            Self::AmbiguousPrefixes(prefixes) => f.write_str(&format!(
                 "There are multiple (and therefore ambiguous) prefixes in this directory: {:?}",
                 prefixes,
             )),
@@ -91,7 +104,7 @@ impl Display for NFLZError {
 impl Error for NFLZError {
     fn source(&self) -> Option<&(dyn Error + 'static)> {
         match self {
-            NFLZError::CantReadDirectory(_, os_err) => Some(os_err),
+            Self::CantReadDirectory(_, os_err) => Some(os_err),
             _ => None,
         }
     }
