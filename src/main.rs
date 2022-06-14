@@ -41,7 +41,8 @@ SOFTWARE.
 #![deny(missing_debug_implementations)]
 #![deny(rustdoc::all)]
 
-use nflz::NFLZAssistant;
+use log::LevelFilter;
+use nflz::{NFLZAssistant, NFLZError};
 use std::io::stdin;
 use std::path::{Path, PathBuf};
 use std::process::exit;
@@ -50,6 +51,7 @@ fn main() {
     let dir = get_dir();
 
     log::set_logger(&logger::StdErrLogger).unwrap();
+    log::set_max_level(LevelFilter::max());
 
     let assistant = NFLZAssistant::new(dir);
 
@@ -77,8 +79,8 @@ fn main() {
         // todo make this more dynamic
         println!(
             "  {:25} => {}",
+            file.file_info().original_filename(),
             file.new_filename().expect("must exist at that point"),
-            file.file_info().original_filename()
         );
     }
 
@@ -94,12 +96,24 @@ fn main() {
         Ok(files) => {
             println!("Successfully renamed {} files.", files.len());
         }
-        Err(err) => {
-            println!(
-                "Failure during renaming. File state might be inconsistent now. Error:\n{}",
-                err
-            );
-        }
+        Err(err) => match &err {
+            NFLZError::AmbiguousPrefixes(_) | NFLZError::AmbiguousSuffixes(_) => {
+                println!(
+                    "Aborted renaming early. No changes made to the file system. Error is:\n{}",
+                    err
+                );
+            }
+            NFLZError::RenameFailed(old, new, ioerror) => {
+                println!("Failure during renaming. File state might be inconsistent now.");
+                println!(
+                    "Could not rename '{}' to '{} because of: {}'",
+                    old, new, ioerror
+                );
+            }
+            _ => {
+                panic!("unexpected error! {:#?}", err);
+            }
+        },
     }
 }
 

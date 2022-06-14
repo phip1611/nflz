@@ -53,7 +53,7 @@ SOFTWARE.
 //!     dbg!(assistant.files_to_rename());
 //!     // some files may already have the correct name
 //!     dbg!(assistant.files_without_rename());
-//!     if assistant.check_can_rename_all() {
+//!     if assistant.check_can_rename_all().is_ok() {
 //!         assistant.rename_all().unwrap();
 //!     }
 //! }
@@ -72,9 +72,10 @@ SOFTWARE.
 // now allow a few rules which are denied by the above statement
 // --> they are ridiculous and not necessary
 #![allow(
-    clippy::suboptimal_flops,
+    clippy::fallible_impl_from,
+    clippy::needless_doctest_main,
     clippy::redundant_pub_crate,
-    clippy::fallible_impl_from
+    clippy::suboptimal_flops
 )]
 #![deny(missing_docs)]
 #![deny(missing_debug_implementations)]
