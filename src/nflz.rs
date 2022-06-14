@@ -172,8 +172,8 @@ fn find_max_digits(files: &[FileInfo]) -> u64 {
         .iter()
         .map(|pf| pf.number_group_value())
         .collect::<Vec<u64>>();
-    let max = nums.iter().max().unwrap();
-    count_digits_without_leading_zeroes(*max)
+    let max = nums.into_iter().max().unwrap_or(0);
+    count_digits_without_leading_zeroes(max)
 }
 
 fn check_no_destination_file_already_exists(

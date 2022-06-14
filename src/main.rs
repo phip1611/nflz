@@ -62,6 +62,11 @@ fn main() {
     }
     let assistant = assistant.unwrap();
 
+    if assistant.files_to_rename().is_empty() {
+        println!("Found no files to rename. Exit.");
+        exit(0);
+    }
+
     println!("NFLZ would not rename the following files:");
     for skipped_file in assistant.files_without_rename() {
         println!("  {}", skipped_file.file_info().original_filename());
