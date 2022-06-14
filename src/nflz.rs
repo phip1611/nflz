@@ -148,11 +148,14 @@ fn files_to_nflz_file_info_vec(paths: Vec<PathBuf>) -> Result<Vec<FileInfo>, NFL
                 match err {
                     // this is acceptable; skip irrelevant files
                     NFLZError::FilenameMustIncludeExactlyOneNumberedGroup(filename) => {
-                        log::info!("Skipping file '{filename}'");
+                        log::info!("Skipping file '{}'", filename);
                         continue;
                     }
                     NFLZError::ValueInNumberedGroupNotANumber(filename) => {
-                        log::warn!("Skipping file '{filename}' because of invalid number within number group.");
+                        log::warn!(
+                            "Skipping file '{}' because of invalid number within number group.",
+                            filename
+                        );
                         continue;
                     }
                     _ => (),
