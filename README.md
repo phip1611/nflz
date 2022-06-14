@@ -82,3 +82,6 @@ Please confirm with 'y' or abort with 'n'
 y
 Successfully renamed 11 files.
 ```
+
+# MSRV
+The MSRV is 1.56.1 stable.
