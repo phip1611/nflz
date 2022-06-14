@@ -15,20 +15,36 @@ paris (12).png  =>  paris (12).png
 paris (n).png   =>  n digits => indicator for how many zeros to add
 ```
 
-## Install / use
+## Install / How To Use
 ### Rust library
 Cargo.toml:
 ```
 nflz = "<latest-version>"
 ```
+
+Minimal example:
+```rust
+use nflz::NFLZAssistant;
+
+/// Minimal example that renames all files in the given directory.
+/// After the operation is done, all will include the same amount of digits
+/// inside their number group inside the filename.
+fn main() {
+    let assistant = NFLZAssistant::new("./test-resources").unwrap();
+    dbg!(assistant.files_to_rename());
+    // some files may already have the correct name
+    dbg!(assistant.files_without_rename());
+    if assistant.check_can_rename_all().is_ok() {
+        assistant.rename_all().unwrap();
+    }
+}
+```
+
+Please also check out the docs on <https://docs.rs/nflz>.
+
 ### CLI tool
-`$ cargo install nflz`
-
-## How it Works (Library)
-Please check out the docs on <https://docs.rs/nflz>.
-
-## How it Works (CLI)
-It either works in pwd (present working dir) or in the directory passed as the first argument.
+`$ cargo install nflz` \
+It either works in the pwd (present working dir) or in the directory passed as the first argument.
 
 ```
 $ nflz
@@ -36,7 +52,7 @@ $ nflz <absolute or relative path to dir>
 ```
 
 **`nflz` asks you for confirmation before it does any changes to your file system!
-However, always backup the files in another directory first to make sure nothing becomes inconsistent**
+However, always backup the files in another directory first to make sure nothing becomes inconsistent.**
 
 
 ## Background
