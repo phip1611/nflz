@@ -8,7 +8,7 @@ fn main() {
     dbg!(assistant.files_to_rename());
     // some files may already have the correct name
     dbg!(assistant.files_without_rename());
-    if assistant.check_can_rename_all() {
+    if assistant.check_can_rename_all().is_ok() {
         assistant.rename_all().unwrap();
     }
 }

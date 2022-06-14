@@ -168,12 +168,12 @@ fn files_to_nflz_file_info_vec(paths: Vec<PathBuf>) -> Result<Vec<FileInfo>, NFL
 
 /// Searches all files and returns the highest count of digits in a number in a number group.
 fn find_max_digits(files: &[FileInfo]) -> u64 {
-    let nums = files
+    let max_number = files
         .iter()
         .map(|pf| pf.number_group_value())
-        .collect::<Vec<u64>>();
-    let max = nums.into_iter().max().unwrap_or(0);
-    count_digits_without_leading_zeroes(max)
+        .max()
+        .unwrap_or(0);
+    count_digits_without_leading_zeroes(max_number)
 }
 
 fn check_no_destination_file_already_exists(
