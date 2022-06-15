@@ -1,9 +1,9 @@
 [package]
 name = "nflz"
-description = "CLI + Library to add leading zeros to ascending numbered file names. NFLZ stands for Numbered Files Leading zeros."
-version = "0.1.2"
+description = "CLI + Library to add leading zeros to ascending numbered file names. NFLZ stands for Numbered Files Leading Zeros."
+version = "1.0.0"
 authors = ["Philipp Schuster <phip1611@gmail.com>"]
-edition = "2018"
+edition = "2021"
 keywords = ["file", "filename", "ascending", "numbered", "zeros"]
 categories = [ "command-line-utilities", "filesystem" ]
 readme = "README.md"
@@ -13,4 +13,5 @@ repository = "https://github.com/phip1611/nflz"
 documentation = "https://docs.rs/nflz/"
 
 [dependencies]
-regex = "1.4.3"
+regex = "1.5"
+log = "0.4"

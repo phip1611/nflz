@@ -1,7 +1,7 @@
 /*
 MIT License
 
-Copyright (c) 2021 Philipp Schuster
+Copyright (c) 2022 Philipp Schuster
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -23,118 +23,207 @@ SOFTWARE.
 */
 //! Module related to renaming files.
 
-use std::collections::{BTreeMap, HashSet};
-use std::path::Path;
-
 use crate::error::NFLZError;
-use crate::fsutil::check_for_existing_files;
-use crate::parse::ParsedFilename;
+use crate::file_info::{FileInfo, FileInfoWithRenameAdvice};
+use crate::math::count_digits_without_leading_zeroes;
+use std::collections::HashSet;
+use std::path::{Path, PathBuf};
 
-/// Describes the rename data. Mapping from old name to new name.
-pub type RenameMap = BTreeMap<ParsedFilename, String>;
+/// Main entry point into the library. Helper struct that guides a user through the whole
+/// process of the library.
+#[derive(Debug)]
+pub struct NFLZAssistant {
+    /// A copy of the path that was provided by the user.
+    path: PathBuf,
+    /// Vector with all relevant rename information.
+    /// The vector is sorted by the order of numbers inside the filename number groups.
+    files_with_rename_info: Vec<FileInfoWithRenameAdvice>,
+}
 
-/// Compute the rename map. This is a mapping from original file name
-/// to the name it would rename the file in the next step.
-/// It avoids unnecessary renames (oldname == newname).
-///
-/// ## Parameters
-/// * `pf_list`: All files obtained by [`crate::fsutil::get_matching_files`]
-///
-/// ## Return value
-/// It returns a tuple with the rename map (old name to new name) and files that do not
-/// need a rename.
-pub fn compute_rename_map(pf_list: &Vec<ParsedFilename>) -> (RenameMap, Vec<String>) {
-    let mut map = BTreeMap::new();
-    let mut no_rename_required_file_list = vec![];
-    if pf_list.is_empty() {
-        return (map, no_rename_required_file_list);
+impl NFLZAssistant {
+    /// Creates a new object. Needs the working directory where this library should work on.
+    /// Not necessarily the present working directory of your shell,
+    ///
+    /// # Parameters
+    /// * `working_dir` Directory to search for files. Expected to be a directory with files in
+    ///                 the form `Img (1).jpg`, `Img (2).jpg`, ..., `Img (99).jpg`, ...
+    ///                 `Img (124).jpg`.
+    pub fn new<P: AsRef<Path>>(working_dir: P) -> Result<Self, NFLZError> {
+        // all files inside the directory
+        let paths = crate::fsutil::read_directory_flat(working_dir.as_ref()).map_err(|err| {
+            NFLZError::CantReadDirectory(PathBuf::from(working_dir.as_ref()), err)
+        })?;
+
+        // all valid files that could be parsed
+        let files = files_to_nflz_file_info_vec(paths)?;
+
+        let max_digits = find_max_digits(&files);
+
+        let mut files = files
+            .into_iter()
+            .map(|info| FileInfoWithRenameAdvice::new(info, max_digits))
+            .collect::<Vec<_>>();
+
+        // sort by number, ascending
+        files.sort();
+
+        Ok(Self {
+            path: PathBuf::from(working_dir.as_ref()),
+            files_with_rename_info: files,
+        })
     }
 
-    let nums = pf_list
-        .iter()
-        .map(|pf| pf.number_group_value())
-        .collect::<Vec<u64>>();
-    let max = nums.iter().max().unwrap();
-    let max_digits = digits(*max);
-    for pf in pf_list {
-        let digits = digits(pf.number_group_value());
-        let add_digits_count = max_digits - digits;
-        let value_str_with_leading_zeros = format!(
-            "{}{}",
-            String::from("0").repeat(add_digits_count as usize),
-            pf.number_group_value()
-        );
-        let new_filename = format!(
-            "{}{}{}",
-            pf.filename_prefix(),
-            value_str_with_leading_zeros,
-            pf.filename_suffix(),
-        );
-
-        // avoid unnecessary renames
-        if pf.original_filename() != new_filename {
-            map.insert(pf.clone(), new_filename);
-        } else {
-            no_rename_required_file_list.push(new_filename.to_string());
-        }
-    }
-
-    (map, no_rename_required_file_list)
-}
-
-/// Verifies that all files can be renamed without conflict.
-/// * `dir` Directory where all replacements happen. Needed to make some checks before the actual renaming starts.
-/// * `rn_map` Map with the mappings from old to new names.
-/// * `pf_list` List with parsed filenames. Needed to make some checks before the actual renaming starts.
-pub fn can_rename_all(
-    dir: &Path,
-    rn_map: &RenameMap,
-    pf_list: &Vec<ParsedFilename>,
-) -> Result<(), NFLZError> {
-    can_rename_all__destination_files(dir, rn_map)?;
-    can_rename_all__same_suffix_and_prefix(pf_list)?;
-    Ok(())
-}
-
-/// Renames all files according to the mappings in the rename map
-/// if [`can_rename_all`] returns `Ok`.
-/// * `dir` Directory where all replacements happen. Only needed to make some checks before the actual renaming starts.
-/// * `rn_map` Map with the mappings from old to new names.
-/// * `pf_list` List with parsed filenames. Only needed to make some checks before the actual renaming starts.
-pub fn rename_all(
-    dir: &Path,
-    rn_map: &RenameMap,
-    pf_list: &Vec<ParsedFilename>,
-) -> Result<(), NFLZError> {
-    can_rename_all(dir, rn_map, pf_list)?;
-    crate::fsutil::rename_all_files(&rn_map)?;
-    Ok(())
-}
-
-#[allow(non_snake_case)]
-fn can_rename_all__destination_files(dir: &Path, rn_map: &RenameMap) -> Result<(), NFLZError> {
-    let new_names_ref = rn_map.values();
-    let conflicting_files = check_for_existing_files(dir, new_names_ref);
-
-    // check that now file with one of the new names already exists
-    if !conflicting_files.is_empty() {
-        Err(NFLZError::ConflictingFiles(
-            conflicting_files.iter().map(|s| s.to_string()).collect(),
-        ))
-    } else {
+    /// Verifies that all files can be renamed without conflict.
+    /// * `dir` Directory where all replacements happen. Needed to make some checks before the actual renaming starts.
+    /// * `rn_map` Map with the mappings from old to new names.
+    /// * `pf_list` List with parsed filenames. Needed to make some checks before the actual renaming starts.
+    pub fn check_can_rename_all(&self) -> Result<(), NFLZError> {
+        check_no_destination_file_already_exists(&self.files_with_rename_info)?;
+        check_suffixes_and_prefixes_are_unambiguous(&self.files_with_rename_info)?;
         Ok(())
     }
+
+    /// Renames all files inside the file system if no possible conflicts are detected. Runs
+    /// [`Self::check_can_rename_all`] first. Note that there may be external changes to the file
+    /// system during that process.
+    ///
+    /// If the operation is successfully, it returns the same as [`Self::files_to_rename`].
+    pub fn rename_all(self) -> Result<Vec<FileInfoWithRenameAdvice>, NFLZError> {
+        self.check_can_rename_all()?;
+        for file in self.files_to_rename() {
+            std::fs::rename(
+                file.file_info().path(),
+                file.path_with_new_filename()
+                    .expect("Must be present at this point! Programming error?!"),
+            )
+            .map_err(|io_err| {
+                NFLZError::RenameFailed(
+                    file.file_info().original_filename().to_string(),
+                    file.new_filename().unwrap().to_string(),
+                    io_err,
+                )
+            })?;
+        }
+        Ok(self.files_with_rename_info)
+    }
+
+    // GETTERS
+
+    /// Returns all files that need to be renamed. Getter can be used to print
+    /// all files that the library is going to change in its final rename operation.
+    pub fn files_to_rename(&self) -> Vec<&FileInfoWithRenameAdvice> {
+        self.files_with_rename_info
+            .iter()
+            .filter(|new_filename| new_filename.needs_rename())
+            .collect()
+    }
+
+    /// Returns all files that need to be renamed because their file name already
+    /// fits into the order of the other files. Getter can be used to print all files
+    /// that the library will not change during its final rename operation.
+    pub fn files_without_rename(&self) -> Vec<&FileInfoWithRenameAdvice> {
+        self.files_with_rename_info
+            .iter()
+            .filter(|new_filename| new_filename.is_already_properly_named())
+            .collect()
+    }
+
+    /// Returns a copy of the original user input path.
+    pub const fn path(&self) -> &PathBuf {
+        &self.path
+    }
 }
 
-#[allow(non_snake_case)]
-fn can_rename_all__same_suffix_and_prefix(pf_list: &Vec<ParsedFilename>) -> Result<(), NFLZError> {
+/// Transforms all files by their path to a list of [`FileInfo`]. Files that can't be parsed
+/// to [`FileInfo`] are skipped. Thus, files such as `.gitignore` etc do not hinder the library.
+fn files_to_nflz_file_info_vec(paths: Vec<PathBuf>) -> Result<Vec<FileInfo>, NFLZError> {
+    let mut vec = Vec::with_capacity(paths.len());
+    for path in paths {
+        let file = FileInfo::new(path);
+        match file {
+            Ok(file) => {
+                vec.push(file);
+            }
+            Err(err) => {
+                match err {
+                    // this is acceptable; skip irrelevant files
+                    NFLZError::FilenameMustIncludeExactlyOneNumberedGroup(filename) => {
+                        log::info!("Skipping file '{}'", filename);
+                        continue;
+                    }
+                    NFLZError::ValueInNumberedGroupNotANumber(filename) => {
+                        log::warn!(
+                            "Skipping file '{}' because of invalid number within number group.",
+                            filename
+                        );
+                        continue;
+                    }
+                    _ => (),
+                }
+                // if the previous match didn't execute the "continue", we have a hard error
+                // => return early from function
+                return Err(err);
+            }
+        }
+    }
+    Ok(vec)
+}
+
+/// Searches all files and returns the highest count of digits in a number in a number group.
+fn find_max_digits(files: &[FileInfo]) -> u64 {
+    let max_number = files
+        .iter()
+        .map(|pf| pf.number_group_value())
+        .max()
+        .unwrap_or(0);
+    count_digits_without_leading_zeroes(max_number)
+}
+
+/// Checks that no file path after the renaming already exists inside the file system.
+/// Fails otherwise.
+fn check_no_destination_file_already_exists(
+    files: &[FileInfoWithRenameAdvice],
+) -> Result<(), NFLZError> {
+    let files = files
+        .iter()
+        .filter(|file| file.renamed_file_already_exists())
+        .collect::<Vec<_>>();
+    if files.is_empty() {
+        Ok(())
+    } else {
+        let paths = files
+            .iter()
+            .map(|info| PathBuf::from(info.file_info().path()))
+            .collect::<Vec<_>>();
+        Err(NFLZError::ConflictingFiles(paths))
+    }
+}
+
+/// Checks if suffixes or prefixes are ambiguous. The only allowed exception for different suffixes
+/// is when there are two suffixes and they do only differ in their case. In this case, its probably
+/// a "Img (1).jpg" and "Img (2).JPG" situation. This might happen if you combine photos from
+/// different cameras.
+fn check_suffixes_and_prefixes_are_unambiguous(
+    pf_list: &[FileInfoWithRenameAdvice],
+) -> Result<(), NFLZError> {
     let mut prefix_set = HashSet::new();
     let mut suffix_set = HashSet::new();
 
     for pf in pf_list {
-        prefix_set.insert(pf.filename_prefix());
-        suffix_set.insert(pf.filename_suffix());
+        prefix_set.insert(pf.file_info().filename_prefix());
+        suffix_set.insert(pf.file_info().filename_suffix());
     }
+
+    let two_suffixes_only_differ_in_case = {
+        if suffix_set.len() == 2 {
+            let mut iter = suffix_set.iter();
+            let suffix1 = iter.next().unwrap();
+            let suffix2 = iter.next().unwrap();
+            suffix1.to_lowercase() == suffix2.to_lowercase()
+        } else {
+            false
+        }
+    };
 
     if prefix_set.len() > 1 {
         Err(NFLZError::AmbiguousPrefixes(
@@ -143,7 +232,7 @@ fn can_rename_all__same_suffix_and_prefix(pf_list: &Vec<ParsedFilename>) -> Resu
                 .map(|s| s.to_string())
                 .collect::<HashSet<String>>(),
         ))
-    } else if suffix_set.len() > 1 {
+    } else if suffix_set.len() > 1 && !two_suffixes_only_differ_in_case {
         Err(NFLZError::AmbiguousSuffixes(
             suffix_set
                 .into_iter()
@@ -155,48 +244,70 @@ fn can_rename_all__same_suffix_and_prefix(pf_list: &Vec<ParsedFilename>) -> Resu
     }
 }
 
-/// Returns the amount of digits of a number.
-/// For example: 12345 => 5
-fn digits(number: u64) -> u32 {
-    let x = (number + 1) as f64;
-    x.log10().ceil() as u32
-}
-
 #[cfg(test)]
 mod tests {
-    use crate::fsutil::get_matching_files;
-
-    use super::*;
+    use crate::file_info::{FileInfo, FileInfoWithRenameAdvice};
+    use crate::nflz::check_suffixes_and_prefixes_are_unambiguous;
+    use crate::NFLZAssistant;
 
     #[test]
-    fn test_compute_rename_map() {
-        let dir = std::env::current_dir().unwrap();
-        let path = format!("{}/test", dir.as_path().to_str().unwrap());
-        let files = get_matching_files(path.as_ref()).unwrap();
-        let (rn_map, _) = compute_rename_map(&files);
+    fn test_nflz() {
+        let assistant = NFLZAssistant::new("./test-resources").unwrap();
+        let files_to_rename = assistant.files_to_rename();
+        let files_without_rename = assistant.files_without_rename();
+        assert_eq!(
+            files_without_rename.len() + files_to_rename.len(),
+            11,
+            "must skip file invalid file that doesn't match the pattern!"
+        );
 
-        for i in 1..10 {
-            let expected = format!("paris (00{}).jpg", i);
-            let input = ParsedFilename::new(format!("paris ({}).jpg", i)).unwrap();
-            assert_eq!(expected, *rn_map.get(&input).unwrap());
-        }
+        let actual = files_to_rename
+            .iter()
+            .map(|f| f.new_filename().expect("must be available at this point"))
+            .collect::<Vec<_>>();
+        assert_eq!(
+            [
+                "paris (001).jpg",
+                "paris (002).jpg",
+                "paris (003).jpg",
+                "paris (004).jpg",
+                "paris (005).jpg",
+                "paris (006).jpg",
+                "paris (007).jpg",
+                "paris (008).jpg",
+                "paris (009).jpg",
+                "paris (010).jpg",
+            ],
+            actual.as_slice()
+        );
 
-        let expected_paris10 = ParsedFilename::new("paris (10).jpg".to_string()).unwrap();
+        let actual = files_without_rename
+            .iter()
+            .map(|f| f.file_info().original_filename())
+            .collect::<Vec<_>>();
+        assert_eq!(["paris (734).jpg"], actual.as_slice());
 
-        assert_eq!("paris (010).jpg", *rn_map.get(&expected_paris10).unwrap());
-
-        // no rename necessary
-
-        let not_expected_paris734 = ParsedFilename::new("paris (734).jpg".to_string()).unwrap();
-        assert!(!rn_map.contains_key(&not_expected_paris734));
+        assert!(assistant.check_can_rename_all().is_ok());
     }
 
     #[test]
-    fn test_can_rename_all() {
-        let dir = std::env::current_dir().unwrap();
-        let path = format!("{}/test", dir.as_path().to_str().unwrap());
-        let files = get_matching_files(path.as_ref()).unwrap();
-        let (rn_map, _) = compute_rename_map(&files);
-        assert!(can_rename_all(path.as_ref(), &rn_map, &files).is_ok());
+    #[allow(non_snake_case)]
+    fn test_check_suffixes_or_prefixes_are_ambiguous__allow_different_font_casing() {
+        let input = [
+            FileInfoWithRenameAdvice::new(FileInfo::new("img (1).jpg").unwrap(), 1),
+            FileInfoWithRenameAdvice::new(FileInfo::new("img (2).JPG").unwrap(), 1),
+            FileInfoWithRenameAdvice::new(FileInfo::new("img (3).jpg").unwrap(), 1),
+        ];
+
+        check_suffixes_and_prefixes_are_unambiguous(&input)
+            .expect("different font case for file type is allowed");
+
+        let input = [
+            FileInfoWithRenameAdvice::new(FileInfo::new("img (1).jpg").unwrap(), 1),
+            FileInfoWithRenameAdvice::new(FileInfo::new("IMG (2).jpg").unwrap(), 1),
+            FileInfoWithRenameAdvice::new(FileInfo::new("img (3).jpg").unwrap(), 1),
+        ];
+
+        check_suffixes_and_prefixes_are_unambiguous(&input).expect_err("must fail because different prefixes are used (only different font casing is also an error)");
     }
 }
