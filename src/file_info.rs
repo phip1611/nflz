@@ -51,9 +51,10 @@ pub struct FileInfo {
 
 impl FileInfo {
     /// Constructor for a new file. Only valid if the file has a filename in the form of
-    /// `Img ([0-9]+).jpg` or similar.
-    pub fn new(path: PathBuf) -> Result<Self, NFLZError> {
-        let filename = path_to_filename(&path).to_owned();
+    /// `Img ([0-9]+).jpg` or similar. The constructor does not access the file in the
+    /// file system. It relies on that the file actually exists for the lifetime of this struct.
+    pub fn new<P: AsRef<Path>>(path: P) -> Result<Self, NFLZError> {
+        let filename = path_to_filename(path.as_ref()).to_owned();
 
         let number_group_indices = get_number_group_indices_from_actual_filename(&filename)?;
         let (from, to) = number_group_indices;
@@ -63,7 +64,7 @@ impl FileInfo {
         })?;
 
         Ok(Self {
-            path,
+            path: PathBuf::from(path.as_ref()),
             number_group_str: number_group_value_str.to_string(),
             original_filename: filename,
             number_group_indices,

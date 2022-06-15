@@ -79,7 +79,7 @@ impl NFLZAssistant {
     /// * `pf_list` List with parsed filenames. Needed to make some checks before the actual renaming starts.
     pub fn check_can_rename_all(&self) -> Result<(), NFLZError> {
         check_no_destination_file_already_exists(&self.files_with_rename_info)?;
-        check_suffixes_and_prefixes_are_ambiguous(&self.files_with_rename_info)?;
+        check_suffixes_and_prefixes_are_unambiguous(&self.files_with_rename_info)?;
         Ok(())
     }
 
@@ -179,6 +179,8 @@ fn find_max_digits(files: &[FileInfo]) -> u64 {
     count_digits_without_leading_zeroes(max_number)
 }
 
+/// Checks that no file path after the renaming already exists inside the file system.
+/// Fails otherwise.
 fn check_no_destination_file_already_exists(
     files: &[FileInfoWithRenameAdvice],
 ) -> Result<(), NFLZError> {
@@ -197,8 +199,11 @@ fn check_no_destination_file_already_exists(
     }
 }
 
-#[allow(non_snake_case)]
-fn check_suffixes_and_prefixes_are_ambiguous(
+/// Checks if suffixes or prefixes are ambiguous. The only allowed exception for different suffixes
+/// is when there are two suffixes and they do only differ in their case. In this case, its probably
+/// a "Img (1).jpg" and "Img (2).JPG" situation. This might happen if you combine photos from
+/// different cameras.
+fn check_suffixes_and_prefixes_are_unambiguous(
     pf_list: &[FileInfoWithRenameAdvice],
 ) -> Result<(), NFLZError> {
     let mut prefix_set = HashSet::new();
@@ -209,6 +214,17 @@ fn check_suffixes_and_prefixes_are_ambiguous(
         suffix_set.insert(pf.file_info().filename_suffix());
     }
 
+    let two_suffixes_only_differ_in_case = {
+        if suffix_set.len() == 2 {
+            let mut iter = suffix_set.iter();
+            let suffix1 = iter.next().unwrap();
+            let suffix2 = iter.next().unwrap();
+            suffix1.to_lowercase() == suffix2.to_lowercase()
+        } else {
+            false
+        }
+    };
+
     if prefix_set.len() > 1 {
         Err(NFLZError::AmbiguousPrefixes(
             prefix_set
@@ -216,7 +232,7 @@ fn check_suffixes_and_prefixes_are_ambiguous(
                 .map(|s| s.to_string())
                 .collect::<HashSet<String>>(),
         ))
-    } else if suffix_set.len() > 1 {
+    } else if suffix_set.len() > 1 && !two_suffixes_only_differ_in_case {
         Err(NFLZError::AmbiguousSuffixes(
             suffix_set
                 .into_iter()
@@ -230,6 +246,8 @@ fn check_suffixes_and_prefixes_are_ambiguous(
 
 #[cfg(test)]
 mod tests {
+    use crate::file_info::{FileInfo, FileInfoWithRenameAdvice};
+    use crate::nflz::check_suffixes_and_prefixes_are_unambiguous;
     use crate::NFLZAssistant;
 
     #[test]
@@ -270,5 +288,26 @@ mod tests {
         assert_eq!(["paris (734).jpg"], actual.as_slice());
 
         assert!(assistant.check_can_rename_all().is_ok());
+    }
+
+    #[test]
+    #[allow(non_snake_case)]
+    fn test_check_suffixes_or_prefixes_are_ambiguous__allow_different_font_casing() {
+        let input = [
+            FileInfoWithRenameAdvice::new(FileInfo::new("img (1).jpg").unwrap(), 1),
+            FileInfoWithRenameAdvice::new(FileInfo::new("img (2).JPG").unwrap(), 1),
+            FileInfoWithRenameAdvice::new(FileInfo::new("img (3).jpg").unwrap(), 1),
+        ];
+
+        check_suffixes_and_prefixes_are_unambiguous(&input)
+            .expect("different font case for file type is allowed");
+
+        let input = [
+            FileInfoWithRenameAdvice::new(FileInfo::new("img (1).jpg").unwrap(), 1),
+            FileInfoWithRenameAdvice::new(FileInfo::new("IMG (2).jpg").unwrap(), 1),
+            FileInfoWithRenameAdvice::new(FileInfo::new("img (3).jpg").unwrap(), 1),
+        ];
+
+        check_suffixes_and_prefixes_are_unambiguous(&input).expect_err("must fail because different prefixes are used (only different font casing is also an error)");
     }
 }
