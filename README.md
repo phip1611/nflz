@@ -6,6 +6,11 @@ photos from a camera.
 
 ## What it Does
 **Content of some directory:**
+On the left you see files that are inside a directory. The files may represent photos from one or
+multiple cameras that you organized for example with Windows Explorer. `nflz` can add an appropriate
+number of leading zeroes into the filename so that every trivial program can sort them correctly
+by their apathetically order. In short: It ensures that chronological order equals the alphabetical
+order.
 ```
 paris (1).png   =>  paris (01).png
 paris (2).png   =>  paris (02).png
