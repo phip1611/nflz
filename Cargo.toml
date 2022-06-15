@@ -12,6 +12,11 @@ homepage = "https://github.com/phip1611/nflz"
 repository = "https://github.com/phip1611/nflz"
 documentation = "https://docs.rs/nflz/"
 
+exclude = [
+    ".github",
+    "test-resources",
+]
+
 [dependencies]
 regex = "1.5"
 log = "0.4"
