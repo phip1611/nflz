@@ -49,7 +49,8 @@ pub enum NFLZError {
     AmbiguousPrefixes(HashSet<String>),
     /// The suffixes of all files inside the directory after the rename group
     /// must be unambiguous. Hence, "Img (1) foobar.jpg" and "Img (1) barfoo.png" will result
-    /// in an error.
+    /// in an error. The only allowed exception is if one file is named "Img (1).jpg" and the
+    /// other is called "Img (1).JPG" (different font casing of the file extension).
     AmbiguousSuffixes(HashSet<String>),
 }
 
