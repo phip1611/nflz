@@ -35,7 +35,7 @@ use std::path::{Path, PathBuf};
 ///              `Img (1).jpg`, `Img (2).jpg`, ..., `Img (99).jpg`, ... `Img (124).jpg`.
 ///
 /// # Return Type
-/// The returned type is a vector of [`PathBuf`].
+/// The returned type is a sorted vector of [`PathBuf`].
 pub fn read_directory_flat<P: AsRef<Path>>(dir_path: P) -> std::io::Result<Vec<PathBuf>> {
     let mut files = Vec::new();
 
@@ -54,6 +54,8 @@ pub fn read_directory_flat<P: AsRef<Path>>(dir_path: P) -> std::io::Result<Vec<P
 
         files.push(entry.path())
     }
+
+    files.sort();
 
     Ok(files)
 }
