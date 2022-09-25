@@ -1,3 +1,6 @@
+# tests that modify files are executed here
+.test-resources
+
 # Created by https://www.gitignore.io/api/rust,code,linux,macos,windows,clion+all,intellij+all
 # Edit at https://www.gitignore.io/?templates=rust,code,linux,macos,windows,clion+all,intellij+all
 

@@ -351,30 +351,4 @@ mod tests {
         assert_eq!("(", prefix2);
         assert_eq!(") foobar.png", suffix2);
     }
-
-    /*#[test]
-    fn test_struct_parsed_filename() {
-        let filename1 = "paris (100).png";
-        let parsed = NFLZFileInfo::new(filename1.to_owned()).expect("Must be valid");
-        assert_eq!((7, 10), parsed.number_group_indices());
-        assert_eq!("paris (", parsed.filename_prefix());
-        assert_eq!(").png", parsed.filename_suffix());
-        assert_eq!(100, parsed.number_group_value());
-    }
-
-    #[test]
-    fn test_parsed_filename() {
-        let p1 = NFLZFileInfo::new("img (1).png".to_string()).unwrap();
-        let p1_same = NFLZFileInfo::new("img (1).png".to_string()).unwrap();
-        let p2 = NFLZFileInfo::new("img (2).png".to_string()).unwrap();
-        assert_eq!(
-            p1, p1_same,
-            "Two ParsedFilenames are equal if the point to the same original filename."
-        );
-        assert_ne!(
-            p1, p2,
-            "Two ParsedFilenames are equal if the point to the same original filename."
-        );
-        assert!(p1 < p2, "One ParsedFilename is smaller than the other if the number inside the filename is lower.");
-    }*/
 }

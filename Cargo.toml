@@ -20,3 +20,6 @@ exclude = [
 [dependencies]
 regex = "1.5"
 log = "0.4"
+
+[dev-dependencies]
+fs_extra = "1.2"

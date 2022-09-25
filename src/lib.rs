@@ -54,7 +54,19 @@ SOFTWARE.
 //! /// After the operation is done, all will include the same amount of digits
 //! /// inside their number group inside the filename.
 //! fn main() {
-//!     let assistant = NFLZAssistant::new("./test-resources").unwrap();
+//!     const TEST_DIR: &str = ".test-resources";
+//! #   // prevent that this doc test changes test resources covered by git
+//! #   {
+//! #       const TEST_DIR_SRC: &str = "test-resources";
+//! #       if std::path::Path::is_dir(TEST_DIR.as_ref()) {
+//! #           fs_extra::dir::remove(TEST_DIR).unwrap();
+//! #       }
+//! #       fs_extra::dir::copy(TEST_DIR_SRC, TEST_DIR, &fs_extra::dir::CopyOptions {
+//! #          copy_inside: true, ..Default::default()
+//! #       }).unwrap();
+//! #   }
+//!
+//!     let assistant = NFLZAssistant::new(TEST_DIR).unwrap();
 //!     dbg!(assistant.files_to_rename());
 //!     // some files may already have the correct name
 //!     dbg!(assistant.files_without_rename());

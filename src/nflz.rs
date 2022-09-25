@@ -249,10 +249,29 @@ mod tests {
     use crate::file_info::{FileInfo, FileInfoWithRenameAdvice};
     use crate::nflz::check_suffixes_and_prefixes_are_unambiguous;
     use crate::NFLZAssistant;
+    use std::path::Path;
 
+    const TEST_DIR_SRC: &str = "./test-resources";
+    const TEST_DIR_RT: &str = "./.test-resources";
+
+    /// Uses all test files from "test-resources", copies them to ".test-resources", and performs
+    /// the NFLZ action on them.
     #[test]
     fn test_nflz() {
-        let assistant = NFLZAssistant::new("./test-resources").unwrap();
+        if Path::is_dir(TEST_DIR_RT.as_ref()) {
+            fs_extra::dir::remove(TEST_DIR_RT).unwrap();
+        }
+        fs_extra::dir::copy(
+            TEST_DIR_SRC,
+            TEST_DIR_RT,
+            &fs_extra::dir::CopyOptions {
+                copy_inside: true,
+                ..Default::default()
+            },
+        )
+        .unwrap();
+
+        let assistant = NFLZAssistant::new(TEST_DIR_RT).unwrap();
         let files_to_rename = assistant.files_to_rename();
         let files_without_rename = assistant.files_without_rename();
         assert_eq!(
@@ -288,6 +307,10 @@ mod tests {
         assert_eq!(["paris (734).jpg"], actual.as_slice());
 
         assert!(assistant.check_can_rename_all().is_ok());
+
+        // do the renaming inside the file system
+        let renamed = assistant.rename_all().unwrap();
+        assert_eq!(renamed.len(), 11);
     }
 
     #[test]
