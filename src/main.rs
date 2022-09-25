@@ -94,7 +94,18 @@ fn main() {
 
     match res {
         Ok(files) => {
-            println!("Successfully renamed {} files.", files.len());
+            let renamed_files_count = files
+                .iter()
+                .filter(|x| !x.is_already_properly_named())
+                .count();
+            let unchanged_files_count = files
+                .iter()
+                .filter(|x| x.is_already_properly_named())
+                .count();
+            println!(
+                "Successfully renamed {} files. {} files did not need to be renamed.",
+                renamed_files_count, unchanged_files_count
+            );
         }
         Err(err) => match &err {
             NFLZError::AmbiguousPrefixes(_) | NFLZError::AmbiguousSuffixes(_) => {
@@ -111,7 +122,7 @@ fn main() {
                 );
             }
             _ => {
-                panic!("unexpected error! {:#?}", err);
+                panic!("Unexpected error! {:#?}", err);
             }
         },
     }
