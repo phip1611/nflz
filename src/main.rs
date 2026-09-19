@@ -84,13 +84,43 @@ fn main() {
         );
     }
 
-    let res = ask_for_confirmation();
+    // Check upfront, so that the user is not asked for confirmation for something that can't
+    // be done anyway.
+    let mut ignore_ambiguous_suffixes = false;
+    if let Err(err) = assistant.check_can_rename_all() {
+        match &err {
+            // Not necessarily a problem: the files may come from different cameras, such as
+            // "Img (1).jpg", "Img (2).JPG", and "Img (3).HEIC". The suffix is never changed by
+            // the renaming. Hence, the user can decide.
+            NFLZError::AmbiguousSuffixes(suffixes) => {
+                println!("\nThe files do not all have the same file ending:");
+                // The suffix starts with the ")" of the number group, which is of no interest here.
+                let mut suffixes = suffixes
+                    .iter()
+                    .map(|suffix| suffix.trim_start_matches(')'))
+                    .collect::<Vec<_>>();
+                suffixes.sort_unstable();
+                for suffix in suffixes {
+                    println!("  {}", suffix);
+                }
+                ignore_ambiguous_suffixes = true;
+            }
+            _ => {
+                println!("Can't rename the files. Error is:\n{}", err);
+                exit(1);
+            }
+        }
+    }
+
+    let res = ask_for_confirmation(ignore_ambiguous_suffixes);
     if !res {
         println!("Aborted");
         exit(0);
     }
 
-    let res = assistant.rename_all();
+    let res = assistant
+        .with_ignore_ambiguous_suffixes(ignore_ambiguous_suffixes)
+        .rename_all();
 
     match res {
         Ok(files) => {
@@ -139,8 +169,15 @@ fn get_dir() -> PathBuf {
 }
 
 /// Asks the user to confirm the action.
-fn ask_for_confirmation() -> bool {
-    println!("\nPlease confirm with 'y' or abort with 'n'");
+///
+/// If `require_uppercase` is set, only an uppercase `Y` is accepted. This is used to get an
+/// explicit confirmation for the less obvious cases, such as ambiguous file endings.
+fn ask_for_confirmation(require_uppercase: bool) -> bool {
+    if require_uppercase {
+        println!("\nPlease confirm with 'Y' (uppercase!) or abort with 'n'");
+    } else {
+        println!("\nPlease confirm with 'y' or abort with 'n'");
+    }
     println!("  NFLZ can't guarantee you 100% safety. Always make a backup first (:");
     println!(
         "  But to the best of my knowledge this should work if no catastrophic failure occurs."
@@ -148,8 +185,12 @@ fn ask_for_confirmation() -> bool {
     let mut input = String::new();
     match stdin().read_line(&mut input) {
         Ok(_s) => {
-            // Strings equal?
-            input.trim().to_lowercase() == "y" // trim to remove \r\n | \n
+            let input = input.trim(); // trim to remove \r\n | \n
+            if require_uppercase {
+                input == "Y"
+            } else {
+                input.to_lowercase() == "y"
+            }
         }
         Err(_) => false,
     }

@@ -38,6 +38,8 @@ pub struct NFLZAssistant {
     /// Vector with all relevant rename information.
     /// The vector is sorted by the order of numbers inside the filename number groups.
     files_with_rename_info: Vec<FileInfoWithRenameAdvice>,
+    /// See [`Self::with_ignore_ambiguous_suffixes`].
+    ignore_ambiguous_suffixes: bool,
 }
 
 impl NFLZAssistant {
@@ -70,7 +72,26 @@ impl NFLZAssistant {
         Ok(Self {
             path: PathBuf::from(working_dir.as_ref()),
             files_with_rename_info: files,
+            ignore_ambiguous_suffixes: false,
         })
+    }
+
+    /// Configures whether ambiguous filename suffixes (i.e., file endings) are tolerated.
+    /// By default, they are not, and [`Self::check_can_rename_all`] fails with
+    /// [`NFLZError::AmbiguousSuffixes`].
+    ///
+    /// Only the special case of exactly two suffixes that differ in their font casing, such as
+    /// `Img (1).jpg` and `Img (2).JPG`, is accepted by default. However, a directory may
+    /// legitimately contain files from multiple cameras, such as `Img (1).jpg`, `Img (2).JPG`,
+    /// and `Img (3).HEIC`. Those files still belong to the same set of ordered files, and the
+    /// renaming never touches the suffix. Set this to `true` to allow that.
+    ///
+    /// Ambiguous *prefixes* are not affected by this and remain an error, as they indicate that
+    /// the directory contains multiple unrelated sets of files.
+    #[must_use]
+    pub const fn with_ignore_ambiguous_suffixes(mut self, ignore: bool) -> Self {
+        self.ignore_ambiguous_suffixes = ignore;
+        self
     }
 
     /// Verifies that all files can be renamed without conflict.
@@ -79,7 +100,10 @@ impl NFLZAssistant {
     /// * `pf_list` List with parsed filenames. Needed to make some checks before the actual renaming starts.
     pub fn check_can_rename_all(&self) -> Result<(), NFLZError> {
         check_no_destination_file_already_exists(&self.files_with_rename_info)?;
-        check_suffixes_and_prefixes_are_unambiguous(&self.files_with_rename_info)?;
+        check_suffixes_and_prefixes_are_unambiguous(
+            &self.files_with_rename_info,
+            self.ignore_ambiguous_suffixes,
+        )?;
         Ok(())
     }
 
@@ -203,8 +227,12 @@ fn check_no_destination_file_already_exists(
 /// is when there are two suffixes and they do only differ in their case. In this case, its probably
 /// a "Img (1).jpg" and "Img (2).JPG" situation. This might happen if you combine photos from
 /// different cameras.
+///
+/// If `ignore_ambiguous_suffixes` is set, any combination of suffixes is accepted. See
+/// [`NFLZAssistant::with_ignore_ambiguous_suffixes`].
 fn check_suffixes_and_prefixes_are_unambiguous(
     pf_list: &[FileInfoWithRenameAdvice],
+    ignore_ambiguous_suffixes: bool,
 ) -> Result<(), NFLZError> {
     let mut prefix_set = HashSet::new();
     let mut suffix_set = HashSet::new();
@@ -225,6 +253,9 @@ fn check_suffixes_and_prefixes_are_unambiguous(
         }
     };
 
+    let suffixes_are_acceptable =
+        ignore_ambiguous_suffixes || suffix_set.len() <= 1 || two_suffixes_only_differ_in_case;
+
     if prefix_set.len() > 1 {
         Err(NFLZError::AmbiguousPrefixes(
             prefix_set
@@ -232,7 +263,7 @@ fn check_suffixes_and_prefixes_are_unambiguous(
                 .map(|s| s.to_string())
                 .collect::<HashSet<String>>(),
         ))
-    } else if suffix_set.len() > 1 && !two_suffixes_only_differ_in_case {
+    } else if !suffixes_are_acceptable {
         Err(NFLZError::AmbiguousSuffixes(
             suffix_set
                 .into_iter()
@@ -322,7 +353,7 @@ mod tests {
             FileInfoWithRenameAdvice::new(FileInfo::new("img (3).jpg").unwrap(), 1),
         ];
 
-        check_suffixes_and_prefixes_are_unambiguous(&input)
+        check_suffixes_and_prefixes_are_unambiguous(&input, false)
             .expect("different font case for file type is allowed");
 
         let input = [
@@ -331,6 +362,25 @@ mod tests {
             FileInfoWithRenameAdvice::new(FileInfo::new("img (3).jpg").unwrap(), 1),
         ];
 
-        check_suffixes_and_prefixes_are_unambiguous(&input).expect_err("must fail because different prefixes are used (only different font casing is also an error)");
+        check_suffixes_and_prefixes_are_unambiguous(&input, false).expect_err("must fail because different prefixes are used (only different font casing is also an error)");
+
+        check_suffixes_and_prefixes_are_unambiguous(&input, true)
+            .expect_err("ambiguous prefixes must still be an error, even if suffixes are ignored");
+    }
+
+    #[test]
+    #[allow(non_snake_case)]
+    fn test_check_suffixes_or_prefixes_are_ambiguous__ignore_ambiguous_suffixes() {
+        let input = [
+            FileInfoWithRenameAdvice::new(FileInfo::new("img (1).jpg").unwrap(), 1),
+            FileInfoWithRenameAdvice::new(FileInfo::new("img (2).JPG").unwrap(), 1),
+            FileInfoWithRenameAdvice::new(FileInfo::new("img (3).HEIC").unwrap(), 1),
+        ];
+
+        check_suffixes_and_prefixes_are_unambiguous(&input, false)
+            .expect_err("more than two different file endings must fail by default");
+
+        check_suffixes_and_prefixes_are_unambiguous(&input, true)
+            .expect("different file endings are allowed if explicitly requested");
     }
 }

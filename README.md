@@ -59,6 +59,14 @@ $ nflz <absolute or relative path to dir>
 **`nflz` asks you for confirmation before it does any changes to your file system!
 However, always backup the files in another directory first to make sure nothing becomes inconsistent.**
 
+#### Ambiguous File Endings
+By default, `nflz` expects all files to have the same file ending. This prevents that unrelated files in a directory
+are renamed by accident. However, photos of one event may well come from multiple cameras, resulting in a mix of
+`jpg`, `JPG`, and `HEIC` files. The renaming never touches the file ending, so this is safe.
+
+If `nflz` finds such a mix, it lists the different file endings and asks you to confirm with an uppercase `Y`
+instead of the usual `y`. In the library, use `NFLZAssistant::with_ignore_ambiguous_suffixes(true)`.
+
 
 ## Background
 If you select multiple files in Windows Explorer and rename them to the same name, Windows Explorer automatically
