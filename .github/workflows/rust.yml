@@ -22,7 +22,7 @@ jobs:
         rust:
           - stable
           - nightly
-          - 1.56.1 # MSVR
+          - 1.85.0 # MSRV
     steps:
       - uses: actions/checkout@v2
       - name: Setup Rust toolchain
