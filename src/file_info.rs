@@ -108,8 +108,7 @@ impl FileInfo {
 
 impl PartialOrd for FileInfo {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        self.number_group_value
-            .partial_cmp(&other.number_group_value)
+        Some(self.cmp(other))
     }
 }
 
@@ -123,7 +122,7 @@ impl Eq for FileInfo {}
 
 impl Ord for FileInfo {
     fn cmp(&self, other: &Self) -> Ordering {
-        self.partial_cmp(other).unwrap()
+        self.number_group_value.cmp(&other.number_group_value)
     }
 }
 
@@ -236,7 +235,7 @@ impl FileInfoWithRenameAdvice {
 
 impl PartialOrd for FileInfoWithRenameAdvice {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        self.file_info.partial_cmp(&other.file_info)
+        Some(self.cmp(other))
     }
 }
 
@@ -250,7 +249,7 @@ impl Eq for FileInfoWithRenameAdvice {}
 
 impl Ord for FileInfoWithRenameAdvice {
     fn cmp(&self, other: &Self) -> Ordering {
-        self.file_info.partial_cmp(other.file_info()).unwrap()
+        self.file_info.cmp(&other.file_info)
     }
 }
 
