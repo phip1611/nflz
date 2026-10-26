@@ -255,7 +255,7 @@ impl Ord for FileInfoWithRenameAdvice {
 
 /// Convenient helper function that transforms a path into the filename.
 pub(crate) fn path_to_filename(path: &Path) -> &str {
-    match path.components().last().unwrap() {
+    match path.components().next_back().unwrap() {
         Component::Normal(name) => name.to_str().expect("path must be valid utf-8"),
         // if we land here, we received a wrong list of files. Should never happen.
         _ => panic!("Unexpected file path component."),
