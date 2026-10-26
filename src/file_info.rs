@@ -144,7 +144,7 @@ impl FileInfoWithRenameAdvice {
     /// # Parameters
     /// - `file_info`: [`FileInfo`]
     /// - `max_digits`: The maximum amount of digits across all processed  [`FileInfo`] files.
-    ///                 For example 4 if the file with the highest number is named `Img (9141).jpg`.
+    ///   For example 4 if the file with the highest number is named `Img (9141).jpg`.
     pub fn new(file_info: FileInfo, max_digits: u64) -> Self {
         assert_ne!(max_digits, 0, "max digits must be bigger than zero");
         let digits = count_digits_without_leading_zeroes(file_info.number_group_value());

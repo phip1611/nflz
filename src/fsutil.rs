@@ -32,7 +32,7 @@ use std::path::{Path, PathBuf};
 ///
 /// # Parameters
 /// * `dir_path` Directory to search for files. Expected to be a directory with files in the form
-///              `Img (1).jpg`, `Img (2).jpg`, ..., `Img (99).jpg`, ... `Img (124).jpg`.
+///   `Img (1).jpg`, `Img (2).jpg`, ..., `Img (99).jpg`, ... `Img (124).jpg`.
 ///
 /// # Return Type
 /// The returned type is a sorted vector of [`PathBuf`].
