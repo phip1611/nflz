@@ -146,13 +146,8 @@ fn ask_for_confirmation() -> bool {
         "  But to the best of my knowledge this should work if no catastrophic failure occurs."
     );
     let mut input = String::new();
-    match stdin().read_line(&mut input) {
-        Ok(_s) => {
-            // Strings equal?
-            input.trim().to_lowercase() == "y" // trim to remove \r\n | \n
-        }
-        Err(_) => false,
-    }
+    // trim to remove \r\n | \n
+    stdin().read_line(&mut input).is_ok() && input.trim().to_lowercase() == "y"
 }
 
 mod logger {

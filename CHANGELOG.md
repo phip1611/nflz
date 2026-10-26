@@ -1,3 +1,6 @@
+# Unreleased
+- MSRV is now 1.85
+
 # v1.0.2 (2023-02-17)
 - dependency updates
 

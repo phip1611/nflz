@@ -108,8 +108,7 @@ impl FileInfo {
 
 impl PartialOrd for FileInfo {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        self.number_group_value
-            .partial_cmp(&other.number_group_value)
+        Some(self.cmp(other))
     }
 }
 
@@ -123,7 +122,7 @@ impl Eq for FileInfo {}
 
 impl Ord for FileInfo {
     fn cmp(&self, other: &Self) -> Ordering {
-        self.partial_cmp(other).unwrap()
+        self.number_group_value.cmp(&other.number_group_value)
     }
 }
 
@@ -145,7 +144,7 @@ impl FileInfoWithRenameAdvice {
     /// # Parameters
     /// - `file_info`: [`FileInfo`]
     /// - `max_digits`: The maximum amount of digits across all processed  [`FileInfo`] files.
-    ///                 For example 4 if the file with the highest number is named `Img (9141).jpg`.
+    ///   For example 4 if the file with the highest number is named `Img (9141).jpg`.
     pub fn new(file_info: FileInfo, max_digits: u64) -> Self {
         assert_ne!(max_digits, 0, "max digits must be bigger than zero");
         let digits = count_digits_without_leading_zeroes(file_info.number_group_value());
@@ -236,7 +235,7 @@ impl FileInfoWithRenameAdvice {
 
 impl PartialOrd for FileInfoWithRenameAdvice {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        self.file_info.partial_cmp(&other.file_info)
+        Some(self.cmp(other))
     }
 }
 
@@ -250,13 +249,13 @@ impl Eq for FileInfoWithRenameAdvice {}
 
 impl Ord for FileInfoWithRenameAdvice {
     fn cmp(&self, other: &Self) -> Ordering {
-        self.file_info.partial_cmp(other.file_info()).unwrap()
+        self.file_info.cmp(&other.file_info)
     }
 }
 
 /// Convenient helper function that transforms a path into the filename.
 pub(crate) fn path_to_filename(path: &Path) -> &str {
-    match path.components().last().unwrap() {
+    match path.components().next_back().unwrap() {
         Component::Normal(name) => name.to_str().expect("path must be valid utf-8"),
         // if we land here, we received a wrong list of files. Should never happen.
         _ => panic!("Unexpected file path component."),

@@ -46,8 +46,8 @@ impl NFLZAssistant {
     ///
     /// # Parameters
     /// * `working_dir` Directory to search for files. Expected to be a directory with files in
-    ///                 the form `Img (1).jpg`, `Img (2).jpg`, ..., `Img (99).jpg`, ...
-    ///                 `Img (124).jpg`.
+    ///   the form `Img (1).jpg`, `Img (2).jpg`, ..., `Img (99).jpg`, ...
+    ///   `Img (124).jpg`.
     pub fn new<P: AsRef<Path>>(working_dir: P) -> Result<Self, NFLZError> {
         // all files inside the directory
         let paths = crate::fsutil::read_directory_flat(working_dir.as_ref()).map_err(|err| {
@@ -246,9 +246,9 @@ fn check_suffixes_and_prefixes_are_unambiguous(
 
 #[cfg(test)]
 mod tests {
+    use crate::NFLZAssistant;
     use crate::file_info::{FileInfo, FileInfoWithRenameAdvice};
     use crate::nflz::check_suffixes_and_prefixes_are_unambiguous;
-    use crate::NFLZAssistant;
     use std::path::Path;
 
     const TEST_DIR_SRC: &str = "./test-resources";
