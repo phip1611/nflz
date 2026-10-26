@@ -246,9 +246,9 @@ fn check_suffixes_and_prefixes_are_unambiguous(
 
 #[cfg(test)]
 mod tests {
+    use crate::NFLZAssistant;
     use crate::file_info::{FileInfo, FileInfoWithRenameAdvice};
     use crate::nflz::check_suffixes_and_prefixes_are_unambiguous;
-    use crate::NFLZAssistant;
     use std::path::Path;
 
     const TEST_DIR_SRC: &str = "./test-resources";
